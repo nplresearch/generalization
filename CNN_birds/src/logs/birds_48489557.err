@@ -1,0 +1,14 @@
+/home/fernando.je/.conda/envs/miller_law/lib/python3.9/site-packages/dendropy/datamodel/treemodel/_tree.py:1509: UserWarning: Calculating MRCA on an unrooted tree implicitly implicitly treats seed node as root. Set tree.is_rooted = True to silence this warning.
+  warnings.warn(
+/home/fernando.je/.conda/envs/miller_law/lib/python3.9/site-packages/torchvision/models/_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+/home/fernando.je/.conda/envs/miller_law/lib/python3.9/site-packages/torchvision/models/_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=None`.
+  warnings.warn(msg)
+Traceback (most recent call last):
+  File "/work/JeFeSpace/generalization_transformer/src/birdsbirdsbirds.py", line 503, in <module>
+    cbar = plt.colorbar(sm)
+  File "/home/fernando.je/.conda/envs/miller_law/lib/python3.9/site-packages/matplotlib/pyplot.py", line 2516, in colorbar
+    ret = gcf().colorbar(mappable, cax=cax, ax=ax, **kwargs)
+  File "/home/fernando.je/.conda/envs/miller_law/lib/python3.9/site-packages/matplotlib/figure.py", line 1215, in colorbar
+    raise ValueError(
+ValueError: Unable to determine Axes to steal space for Colorbar. Either provide the *cax* argument to use as the Axes for the Colorbar, provide the *ax* argument to steal space from it, or add *mappable* to an Axes.

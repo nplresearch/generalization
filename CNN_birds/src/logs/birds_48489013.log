@@ -1,0 +1,41 @@
+Job started on Sat Apr 26 14:54:02 EDT 2025
+Running on node: c2172
+Sat Apr 26 14:54:05 2025       
++-----------------------------------------------------------------------------+
+| NVIDIA-SMI 470.82.01    Driver Version: 470.82.01    CUDA Version: 11.4     |
+|-------------------------------+----------------------+----------------------+
+| GPU  Name        Persistence-M| Bus-Id        Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp  Perf  Pwr:Usage/Cap|         Memory-Usage | GPU-Util  Compute M. |
+|                               |                      |               MIG M. |
+|===============================+======================+======================|
+|   0  Tesla K40m          Off  | 00000000:0B:00.0 Off |                    0 |
+| N/A   33C    P0    65W / 235W |      0MiB / 11441MiB |     96%      Default |
+|                               |                      |                  N/A |
++-------------------------------+----------------------+----------------------+
+                                                                               
++-----------------------------------------------------------------------------+
+| Processes:                                                                  |
+|  GPU   GI   CI        PID   Type   Process name                  GPU Memory |
+|        ID   ID                                                   Usage      |
+|=============================================================================|
+|  No running processes found                                                 |
++-----------------------------------------------------------------------------+
+Working directory: /work/JeFeSpace/generalization_transformer
+total 30
+-rw-rw----+ 1 fernando.je JeFeSpace 8992 Apr 25 11:31 attributes.txt
+drwxrws---+ 2 fernando.je JeFeSpace 4096 Apr 25 11:31 configs
+drwxrws---+ 2 fernando.je JeFeSpace 4096 Apr 25 11:31 CUB_200_2011
+drwxrws---+ 2 fernando.je JeFeSpace 4096 Apr 26 13:50 data
+-rw-rw----+ 1 fernando.je JeFeSpace  610 Apr 26 11:37 env_min.yml
+-rw-rw----+ 1 fernando.je JeFeSpace 6018 Apr 26 09:34 miller_law_clean.yaml
+-rw-rw----+ 1 fernando.je JeFeSpace 4321 Apr 26 11:34 miller_law_loose.yaml
+-rw-rw----+ 1 fernando.je JeFeSpace 9335 Apr 26 09:28 miller_law.yaml
+drwxrws---+ 2 fernando.je JeFeSpace 4096 Apr 25 11:31 notebooks
+drwxrws---+ 2 fernando.je JeFeSpace 4096 Apr 26 14:54 src
+Starting script execution...
+Using GPU: Tesla K40m
+[14:54:48] Starting script execution
+[14:54:48] Loading Newick tree file...
+[14:54:49] Tree file loaded successfully
+[14:54:49] Loading CUB dataset...
+Job finished on Sat Apr 26 14:54:50 EDT 2025

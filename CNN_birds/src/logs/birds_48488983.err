@@ -1,0 +1,16 @@
+/home/fernando.je/.conda/envs/miller_law/lib/python3.9/site-packages/torch/cuda/__init__.py:210: UserWarning: 
+    Found GPU0 Tesla K40m which is of cuda capability 3.5.
+    PyTorch no longer supports this GPU because it is too old.
+    The minimum cuda capability supported by this library is 3.7.
+    
+  warnings.warn(
+Traceback (most recent call last):
+  File "/work/JeFeSpace/generalization_transformer/src/birdsbirdsbirds.py", line 36, in <module>
+    tree = dendropy.Tree.get(path="../data/birds_species.nwk", schema="newick")
+  File "/home/fernando.je/.conda/envs/miller_law/lib/python3.9/site-packages/dendropy/datamodel/treemodel/_tree.py", line 239, in get
+    return cls._get_from(**kwargs)
+  File "/home/fernando.je/.conda/envs/miller_law/lib/python3.9/site-packages/dendropy/datamodel/basemodel.py", line 154, in _get_from
+    return cls.get_from_path(src=src, schema=schema, **kwargs)
+  File "/home/fernando.je/.conda/envs/miller_law/lib/python3.9/site-packages/dendropy/datamodel/basemodel.py", line 215, in get_from_path
+    with open(src, *open_args) as fsrc:
+FileNotFoundError: [Errno 2] No such file or directory: '../data/birds_species.nwk'

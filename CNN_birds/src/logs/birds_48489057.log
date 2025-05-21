@@ -1,0 +1,228 @@
+Job started on Sat Apr 26 15:00:04 EDT 2025
+Running on node: c2172
+Sat Apr 26 15:00:06 2025       
++-----------------------------------------------------------------------------+
+| NVIDIA-SMI 470.82.01    Driver Version: 470.82.01    CUDA Version: 11.4     |
+|-------------------------------+----------------------+----------------------+
+| GPU  Name        Persistence-M| Bus-Id        Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp  Perf  Pwr:Usage/Cap|         Memory-Usage | GPU-Util  Compute M. |
+|                               |                      |               MIG M. |
+|===============================+======================+======================|
+|   0  Tesla K40m          Off  | 00000000:0B:00.0 Off |                    0 |
+| N/A   34C    P0    65W / 235W |      0MiB / 11441MiB |     99%      Default |
+|                               |                      |                  N/A |
++-------------------------------+----------------------+----------------------+
+                                                                               
++-----------------------------------------------------------------------------+
+| Processes:                                                                  |
+|  GPU   GI   CI        PID   Type   Process name                  GPU Memory |
+|        ID   ID                                                   Usage      |
+|=============================================================================|
+|  No running processes found                                                 |
++-----------------------------------------------------------------------------+
+Working directory: /work/JeFeSpace/generalization_transformer
+total 30
+-rw-rw----+ 1 fernando.je JeFeSpace 8992 Apr 25 11:31 attributes.txt
+drwxrws---+ 2 fernando.je JeFeSpace 4096 Apr 25 11:31 configs
+drwxrws---+ 2 fernando.je JeFeSpace 4096 Apr 25 11:31 CUB_200_2011
+drwxrws---+ 2 fernando.je JeFeSpace 4096 Apr 26 13:50 data
+-rw-rw----+ 1 fernando.je JeFeSpace  610 Apr 26 11:37 env_min.yml
+-rw-rw----+ 1 fernando.je JeFeSpace 6018 Apr 26 09:34 miller_law_clean.yaml
+-rw-rw----+ 1 fernando.je JeFeSpace 4321 Apr 26 11:34 miller_law_loose.yaml
+-rw-rw----+ 1 fernando.je JeFeSpace 9335 Apr 26 09:28 miller_law.yaml
+drwxrws---+ 2 fernando.je JeFeSpace 4096 Apr 25 11:31 notebooks
+drwxrws---+ 2 fernando.je JeFeSpace 4096 Apr 26 15:00 src
+Starting script execution...
+Using GPU: Tesla K40m
+[15:00:34] Starting script execution
+[15:00:34] Loading Newick tree file...
+[15:00:35] Tree file loaded successfully
+[15:00:35] Loading CUB dataset...
+Found 7149 scientific names in the tree
+Found 200 common names in the CUB dataset
+Automatically mapped 61 species
+Manual override: Black_footed_Albatross -> Phoebastria nigripes
+Manual override: Crested_Auklet -> Aethia cristatella
+Manual override: Least_Auklet -> Aethia pusilla
+Manual override: Parakeet_Auklet -> Aethia psittacula
+Manual override: Rhinoceros_Auklet -> Cerorhinca monocerata
+Manual override: Brewer_Blackbird -> Euphagus cyanocephalus
+Manual override: Red_winged_Blackbird -> Agelaius phoeniceus
+Manual override: Rusty_Blackbird -> Euphagus carolinus
+Manual override: Yellow_headed_Blackbird -> Xanthocephalus xanthocephalus
+Manual override: Bobolink -> Dolichonyx oryzivorus
+Manual override: Indigo_Bunting -> Passerina cyanea
+Manual override: Lazuli_Bunting -> Passerina amoena
+Manual override: Painted_Bunting -> Passerina ciris
+Final mapping contains 71 species
+  Laysan_Albatross -> Anas laysanensis
+  Rhinoceros_Auklet -> Cerorhinca monocerata
+  Brewer_Blackbird -> Euphagus cyanocephalus
+  Indigo_Bunting -> Passerina cyanea
+  Cardinal -> Cardinalis cardinalis
+Validated mapping contains 71 species
+Found 71 species in both datasets that can be used
+[15:00:39] Building evolutionary distance matrix...
+[15:01:51] Evolutionary distance matrix built
+[15:01:51] Loading ResNet50 model (this may take some time)...
+[15:01:51] No pretrained weights found locally, initializing with random weights
+[15:01:52] Initialized ResNet50 with random weights
+[15:01:52] ResNet50 model loaded successfully
+[15:01:52] Feature extractor created
+[15:01:54] Feature extractor moved to cuda
+[15:01:54] Feature extractor ready for inference
+[15:01:54] Image transforms created
+[15:01:54] Starting feature extraction for each species...
+[15:01:54] Processing species 1/71: Black_footed_Albatross
+Error processing batch for Black_footed_Albatross: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Black_footed_Albatross: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Laysan_Albatross: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Laysan_Albatross: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Crested_Auklet: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Crested_Auklet: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Least_Auklet: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Least_Auklet: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Parakeet_Auklet: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Parakeet_Auklet: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Rhinoceros_Auklet: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Rhinoceros_Auklet: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Brewer_Blackbird: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Brewer_Blackbird: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Red_winged_Blackbird: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Red_winged_Blackbird: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Rusty_Blackbird: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Rusty_Blackbird: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Yellow_headed_Blackbird: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Yellow_headed_Blackbird: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+[15:01:56] Processing species 11/71: Bobolink
+Error processing batch for Bobolink: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Bobolink: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Indigo_Bunting: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Indigo_Bunting: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Lazuli_Bunting: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Lazuli_Bunting: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Painted_Bunting: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Painted_Bunting: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Cardinal: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Cardinal: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Brandt_Cormorant: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Brandt_Cormorant: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Pelagic_Cormorant: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Pelagic_Cormorant: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Brown_Creeper: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Brown_Creeper: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for American_Crow: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for American_Crow: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Olive_sided_Flycatcher: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Olive_sided_Flycatcher: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+[15:01:57] Processing species 21/71: Yellow_bellied_Flycatcher
+Error processing batch for Yellow_bellied_Flycatcher: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Yellow_bellied_Flycatcher: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Northern_Fulmar: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Northern_Fulmar: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for American_Goldfinch: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for American_Goldfinch: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for California_Gull: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for California_Gull: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Florida_Jay: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Florida_Jay: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Dark_eyed_Junco: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Dark_eyed_Junco: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for White_breasted_Kingfisher: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for White_breasted_Kingfisher: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Pacific_Loon: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Pacific_Loon: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Hooded_Merganser: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Hooded_Merganser: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Red_breasted_Merganser: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Red_breasted_Merganser: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+[15:01:59] Processing species 31/71: Clark_Nutcracker
+Error processing batch for Clark_Nutcracker: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Clark_Nutcracker: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for White_breasted_Nuthatch: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for White_breasted_Nuthatch: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Brown_Pelican: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Brown_Pelican: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for White_Pelican: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for White_Pelican: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Sayornis: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Sayornis: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for American_Pipit: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for American_Pipit: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Horned_Puffin: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Horned_Puffin: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Common_Raven: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Common_Raven: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for White_necked_Raven: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for White_necked_Raven: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for American_Redstart: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for American_Redstart: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+[15:02:01] Processing species 41/71: Baird_Sparrow
+Error processing batch for Baird_Sparrow: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Baird_Sparrow: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Brewer_Sparrow: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Brewer_Sparrow: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for House_Sparrow: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for House_Sparrow: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Field_Sparrow: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Field_Sparrow: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Henslow_Sparrow: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Henslow_Sparrow: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Le_Conte_Sparrow: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Le_Conte_Sparrow: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Lincoln_Sparrow: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Lincoln_Sparrow: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Nelson_Sharp_tailed_Sparrow: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Nelson_Sharp_tailed_Sparrow: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Vesper_Sparrow: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Vesper_Sparrow: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for White_crowned_Sparrow: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for White_crowned_Sparrow: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+[15:02:03] Processing species 51/71: White_throated_Sparrow
+Error processing batch for White_throated_Sparrow: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for White_throated_Sparrow: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Caspian_Tern: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Caspian_Tern: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Brown_Thrasher: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Brown_Thrasher: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Black_capped_Vireo: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Black_capped_Vireo: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Blue_headed_Vireo: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Blue_headed_Vireo: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Philadelphia_Vireo: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Philadelphia_Vireo: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Red_eyed_Vireo: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Red_eyed_Vireo: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Warbling_Vireo: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Warbling_Vireo: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for White_eyed_Vireo: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for White_eyed_Vireo: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Yellow_throated_Vireo: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Yellow_throated_Vireo: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+[15:02:05] Processing species 61/71: Black_and_white_Warbler
+Error processing batch for Black_and_white_Warbler: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Black_and_white_Warbler: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Cerulean_Warbler: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Cerulean_Warbler: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Magnolia_Warbler: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Magnolia_Warbler: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Swainson_Warbler: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Swainson_Warbler: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Wilson_Warbler: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Wilson_Warbler: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for American_Three_toed_Woodpecker: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for American_Three_toed_Woodpecker: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Red_bellied_Woodpecker: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Red_bellied_Woodpecker: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Bewick_Wren: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Bewick_Wren: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Carolina_Wren: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Carolina_Wren: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for House_Wren: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for House_Wren: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+[15:02:07] Processing species 71/71: Marsh_Wren
+Error processing batch for Marsh_Wren: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+Error processing batch for Marsh_Wren: cuDNN error: CUDNN_STATUS_NOT_SUPPORTED_ARCH_MISMATCH
+No distances were calculated - no matching species found between datasets.
+Please add more mappings to the common_to_scientific dictionary.
+Job finished on Sat Apr 26 15:02:08 EDT 2025

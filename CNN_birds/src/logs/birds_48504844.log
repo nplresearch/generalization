@@ -1,0 +1,347 @@
+Job started on Mon Apr 28 12:45:06 EDT 2025
+Running on node: c2204
+Mon Apr 28 12:45:08 2025       
++---------------------------------------------------------------------------------------+
+| NVIDIA-SMI 545.23.08              Driver Version: 545.23.08    CUDA Version: 12.3     |
+|-----------------------------------------+----------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id        Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |         Memory-Usage | GPU-Util  Compute M. |
+|                                         |                      |               MIG M. |
+|=========================================+======================+======================|
+|   0  Tesla V100-PCIE-32GB           Off | 00000000:41:00.0 Off |                    0 |
+| N/A   42C    P0              39W / 250W |      0MiB / 32768MiB |      4%      Default |
+|                                         |                      |                  N/A |
++-----------------------------------------+----------------------+----------------------+
+                                                                                         
++---------------------------------------------------------------------------------------+
+| Processes:                                                                            |
+|  GPU   GI   CI        PID   Type   Process name                            GPU Memory |
+|        ID   ID                                                             Usage      |
+|=======================================================================================|
+|  No running processes found                                                           |
++---------------------------------------------------------------------------------------+
+Working directory: /work/JeFeSpace/generalization_transformer
+total 30
+-rw-rw----+ 1 fernando.je JeFeSpace 8992 Apr 25 11:31 attributes.txt
+drwxrws---+ 2 fernando.je JeFeSpace 4096 Apr 25 11:31 configs
+drwxrws---+ 2 fernando.je JeFeSpace 4096 Apr 25 11:31 CUB_200_2011
+drwxrws---+ 2 fernando.je JeFeSpace 4096 Apr 26 16:57 data
+-rw-rw----+ 1 fernando.je JeFeSpace  610 Apr 26 11:37 env_min.yml
+-rw-rw----+ 1 fernando.je JeFeSpace 6018 Apr 26 09:34 miller_law_clean.yaml
+-rw-rw----+ 1 fernando.je JeFeSpace 4321 Apr 26 11:34 miller_law_loose.yaml
+-rw-rw----+ 1 fernando.je JeFeSpace 9335 Apr 26 09:28 miller_law.yaml
+drwxrws---+ 2 fernando.je JeFeSpace 4096 Apr 25 11:31 notebooks
+drwxrws---+ 2 fernando.je JeFeSpace 4096 Apr 28 09:34 results
+drwxrws---+ 2 fernando.je JeFeSpace 4096 Apr 26 17:06 src
+Starting script execution...
+Using GPU: Tesla V100-PCIE-32GB
+[12:45:59] Starting script execution
+[12:45:59] Loading Newick tree file...
+[12:46:04] Tree file loaded successfully
+[12:46:04] Loading CUB dataset...
+Found 7149 scientific names in the tree
+Found 200 common names in the CUB dataset
+Automatically mapped 61 species
+Manual override: Black_footed_Albatross -> Phoebastria nigripes
+Manual override: Crested_Auklet -> Aethia cristatella
+Manual override: Least_Auklet -> Aethia pusilla
+Manual override: Parakeet_Auklet -> Aethia psittacula
+Manual override: Rhinoceros_Auklet -> Cerorhinca monocerata
+Manual override: Brewer_Blackbird -> Euphagus cyanocephalus
+Manual override: Red_winged_Blackbird -> Agelaius phoeniceus
+Manual override: Rusty_Blackbird -> Euphagus carolinus
+Manual override: Yellow_headed_Blackbird -> Xanthocephalus xanthocephalus
+Manual override: Bobolink -> Dolichonyx oryzivorus
+Manual override: Indigo_Bunting -> Passerina cyanea
+Manual override: Lazuli_Bunting -> Passerina amoena
+Manual override: Painted_Bunting -> Passerina ciris
+Final mapping contains 71 species
+  Laysan_Albatross -> Anas laysanensis
+  Rhinoceros_Auklet -> Cerorhinca monocerata
+  Brewer_Blackbird -> Euphagus cyanocephalus
+  Indigo_Bunting -> Passerina cyanea
+  Cardinal -> Cardinalis cardinalis
+Validated mapping contains 71 species
+Found 71 species in both datasets that can be used
+[12:46:42] Building evolutionary distance matrix...
+[12:57:36] Evolutionary distance matrix built
+[12:57:36] Loading ResNet50 model (this may take some time)...
+[12:57:36] No pretrained weights found locally, initializing with random weights
+[12:57:38] Initialized ResNet50 with random weights
+[12:57:38] ResNet50 model loaded successfully
+[12:57:38] Feature extractor created
+[12:57:39] Feature extractor moved to cuda
+[12:57:39] Feature extractor ready for inference
+[12:57:39] Image transforms created
+[12:57:39] Starting feature extraction for each species...
+[12:57:39] Processing species 1/71: Black_footed_Albatross
+Processed 10 images for Black_footed_Albatross
+Processed 10 images for Laysan_Albatross
+Processed 10 images for Crested_Auklet
+Processed 10 images for Least_Auklet
+Processed 10 images for Parakeet_Auklet
+Processed 10 images for Rhinoceros_Auklet
+Processed 10 images for Brewer_Blackbird
+Processed 10 images for Red_winged_Blackbird
+Processed 10 images for Rusty_Blackbird
+Processed 10 images for Yellow_headed_Blackbird
+[12:57:46] Processing species 11/71: Bobolink
+Processed 10 images for Bobolink
+Processed 10 images for Indigo_Bunting
+Processed 10 images for Lazuli_Bunting
+Processed 10 images for Painted_Bunting
+Processed 10 images for Cardinal
+Processed 10 images for Brandt_Cormorant
+Processed 10 images for Pelagic_Cormorant
+Processed 10 images for Brown_Creeper
+Processed 10 images for American_Crow
+Processed 10 images for Olive_sided_Flycatcher
+[12:57:51] Processing species 21/71: Yellow_bellied_Flycatcher
+Processed 10 images for Yellow_bellied_Flycatcher
+Processed 10 images for Northern_Fulmar
+Processed 10 images for American_Goldfinch
+Processed 10 images for California_Gull
+Processed 10 images for Florida_Jay
+Processed 10 images for Dark_eyed_Junco
+Processed 10 images for White_breasted_Kingfisher
+Processed 10 images for Pacific_Loon
+Processed 10 images for Hooded_Merganser
+Processed 10 images for Red_breasted_Merganser
+[12:57:56] Processing species 31/71: Clark_Nutcracker
+Processed 10 images for Clark_Nutcracker
+Processed 10 images for White_breasted_Nuthatch
+Processed 10 images for Brown_Pelican
+Processed 10 images for White_Pelican
+Processed 10 images for Sayornis
+Processed 10 images for American_Pipit
+Processed 10 images for Horned_Puffin
+Processed 10 images for Common_Raven
+Processed 10 images for White_necked_Raven
+Processed 10 images for American_Redstart
+[12:58:01] Processing species 41/71: Baird_Sparrow
+Processed 10 images for Baird_Sparrow
+Processed 10 images for Brewer_Sparrow
+Processed 10 images for House_Sparrow
+Processed 10 images for Field_Sparrow
+Processed 10 images for Henslow_Sparrow
+Processed 10 images for Le_Conte_Sparrow
+Processed 10 images for Lincoln_Sparrow
+Processed 10 images for Nelson_Sharp_tailed_Sparrow
+Processed 10 images for Vesper_Sparrow
+Processed 10 images for White_crowned_Sparrow
+[12:58:06] Processing species 51/71: White_throated_Sparrow
+Processed 10 images for White_throated_Sparrow
+Processed 10 images for Caspian_Tern
+Processed 10 images for Brown_Thrasher
+Processed 10 images for Black_capped_Vireo
+Processed 10 images for Blue_headed_Vireo
+Processed 10 images for Philadelphia_Vireo
+Processed 10 images for Red_eyed_Vireo
+Processed 10 images for Warbling_Vireo
+Processed 10 images for White_eyed_Vireo
+Processed 10 images for Yellow_throated_Vireo
+[12:58:11] Processing species 61/71: Black_and_white_Warbler
+Processed 10 images for Black_and_white_Warbler
+Processed 10 images for Cerulean_Warbler
+Processed 10 images for Magnolia_Warbler
+Processed 10 images for Swainson_Warbler
+Processed 10 images for Wilson_Warbler
+Processed 10 images for American_Three_toed_Woodpecker
+Processed 10 images for Red_bellied_Woodpecker
+Processed 10 images for Bewick_Wren
+Processed 10 images for Carolina_Wren
+Processed 10 images for House_Wren
+[12:58:16] Processing species 71/71: Marsh_Wren
+Processed 10 images for Marsh_Wren
+Collected 126025 distances from the dataset
+After removing duplicates: 39608 unique distances
+Sampled 100 thresholds using percentile sampling
+Threshold range: 0.00 to 1494.25
+Threshold: 0.0, G: 0.486, I: 0.537
+Threshold: 41.1, G: 0.511, I: 0.547
+Threshold: 47.1, G: 0.492, I: 0.569
+Threshold: 51.8, G: 0.477, I: 0.543
+Threshold: 56.6, G: 0.514, I: 0.565
+Threshold: 61.0, G: 0.508, I: 0.560
+Threshold: 65.6, G: 0.492, I: 0.574
+Threshold: 70.0, G: 0.494, I: 0.538
+Threshold: 74.7, G: 0.510, I: 0.529
+Threshold: 79.4, G: 0.489, I: 0.543
+Threshold: 84.2, G: 0.505, I: 0.565
+Threshold: 88.9, G: 0.494, I: 0.548
+Threshold: 93.7, G: 0.519, I: 0.544
+Threshold: 98.6, G: 0.518, I: 0.545
+Threshold: 103.7, G: 0.527, I: 0.547
+Threshold: 108.8, G: 0.489, I: 0.552
+Threshold: 113.8, G: 0.498, I: 0.546
+Threshold: 119.0, G: 0.493, I: 0.575
+Threshold: 124.3, G: 0.524, I: 0.554
+Threshold: 129.5, G: 0.508, I: 0.553
+Threshold: 134.6, G: 0.525, I: 0.544
+Threshold: 139.9, G: 0.512, I: 0.553
+Threshold: 145.3, G: 0.493, I: 0.552
+Threshold: 150.5, G: 0.496, I: 0.547
+Threshold: 155.9, G: 0.496, I: 0.534
+Threshold: 161.1, G: 0.485, I: 0.587
+Threshold: 166.4, G: 0.511, I: 0.566
+Threshold: 171.8, G: 0.488, I: 0.545
+Threshold: 177.2, G: 0.498, I: 0.535
+Threshold: 182.7, G: 0.487, I: 0.559
+Threshold: 188.3, G: 0.498, I: 0.530
+Threshold: 193.9, G: 0.514, I: 0.540
+Threshold: 199.6, G: 0.517, I: 0.547
+Threshold: 205.2, G: 0.503, I: 0.540
+Threshold: 211.1, G: 0.504, I: 0.535
+Threshold: 216.7, G: 0.499, I: 0.543
+Threshold: 222.4, G: 0.502, I: 0.538
+Threshold: 228.0, G: 0.508, I: 0.533
+Threshold: 234.0, G: 0.487, I: 0.532
+Threshold: 240.1, G: 0.517, I: 0.516
+Threshold: 245.8, G: 0.495, I: 0.533
+Threshold: 251.8, G: 0.531, I: 0.555
+Threshold: 257.7, G: 0.511, I: 0.535
+Threshold: 263.5, G: 0.499, I: 0.539
+Threshold: 269.9, G: 0.488, I: 0.526
+Threshold: 276.0, G: 0.502, I: 0.533
+Threshold: 281.9, G: 0.509, I: 0.539
+Threshold: 288.2, G: 0.499, I: 0.539
+Threshold: 294.2, G: 0.498, I: 0.548
+Threshold: 300.4, G: 0.513, I: 0.527
+Threshold: 306.8, G: 0.515, I: 0.538
+Threshold: 313.1, G: 0.507, I: 0.532
+Threshold: 319.4, G: 0.492, I: 0.541
+Threshold: 326.1, G: 0.494, I: 0.544
+Threshold: 332.6, G: 0.506, I: 0.549
+Threshold: 339.2, G: 0.500, I: 0.530
+Threshold: 346.0, G: 0.507, I: 0.526
+Threshold: 352.8, G: 0.498, I: 0.546
+Threshold: 359.5, G: 0.493, I: 0.518
+Threshold: 366.0, G: 0.502, I: 0.526
+Threshold: 372.9, G: 0.506, I: 0.526
+Threshold: 379.8, G: 0.494, I: 0.526
+Threshold: 387.1, G: 0.505, I: 0.545
+Threshold: 394.3, G: 0.501, I: 0.523
+Threshold: 402.0, G: 0.487, I: 0.515
+Threshold: 409.7, G: 0.515, I: 0.521
+Threshold: 416.7, G: 0.489, I: 0.531
+Threshold: 424.4, G: 0.508, I: 0.535
+Threshold: 431.9, G: 0.522, I: 0.510
+Threshold: 439.7, G: 0.497, I: 0.517
+Threshold: 448.5, G: 0.502, I: 0.511
+Threshold: 456.3, G: 0.499, I: 0.524
+Threshold: 465.1, G: 0.504, I: 0.543
+Threshold: 473.3, G: 0.491, I: 0.527
+Threshold: 482.4, G: 0.483, I: 0.534
+Threshold: 491.8, G: 0.515, I: 0.511
+Threshold: 501.1, G: 0.507, I: 0.513
+Threshold: 510.8, G: 0.507, I: 0.497
+Threshold: 520.3, G: 0.501, I: 0.534
+Threshold: 530.8, G: 0.500, I: 0.534
+Threshold: 541.3, G: 0.497, I: 0.535
+Threshold: 552.4, G: 0.517, I: 0.503
+Threshold: 564.4, G: 0.510, I: 0.533
+Threshold: 576.3, G: 0.498, I: 0.509
+Threshold: 588.2, G: 0.509, I: 0.520
+Threshold: 601.4, G: 0.500, I: 0.502
+Threshold: 615.2, G: 0.500, I: 0.518
+Threshold: 629.2, G: 0.501, I: 0.496
+Threshold: 644.8, G: 0.496, I: 0.503
+Threshold: 661.7, G: 0.515, I: 0.517
+Threshold: 679.9, G: 0.488, I: 0.503
+Threshold: 699.8, G: 0.506, I: 0.506
+Threshold: 722.5, G: 0.515, I: 0.502
+Threshold: 746.2, G: 0.498, I: 0.475
+Threshold: 775.7, G: 0.495, I: 0.479
+Threshold: 811.2, G: 0.498, I: 0.498
+Threshold: 857.4, G: 0.499, I: 0.491
+Threshold: 912.9, G: 0.488, I: 0.523
+Threshold: 1007.5, G: 0.493, I: 0.496
+Threshold: 1494.2, G: 0.526, I: 0.494
+
+=== Training with alpha=1.0 ===
+
+Saving models to: /work/JeFeSpace/generalization_transformer/data/models/20250428_130417
+Saving results to: /work/JeFeSpace/generalization_transformer/results/models_20250428_130417
+Training using: cuda
+Training species: 61
+Out-of-distribution species: 10
+Model initialized with 23.63M parameters
+Epoch 1/15 | Train Loss: 0.1097 | Val Loss: 0.3074
+I-score: 0.5960 | G-score: 0.5600 | OOD G-score: 0.5600
+Saved model for epoch 1
+New best model at epoch 1 with val_loss: 0.3074
+Epoch 2/15 | Train Loss: 0.0832 | Val Loss: 0.3064
+I-score: 0.6160 | G-score: 0.5040 | OOD G-score: 0.4900
+Saved model for epoch 2
+New best model at epoch 2 with val_loss: 0.3064
+Epoch 3/15 | Train Loss: 0.0763 | Val Loss: 0.3054
+I-score: 0.5980 | G-score: 0.5860 | OOD G-score: 0.4700
+GPU Memory: 298.8MB / 32501.1MB (0.9%)
+Cleaned GPU cache
+GPU Memory: 298.8MB / 32501.1MB (0.9%)
+Saved model for epoch 3
+New best model at epoch 3 with val_loss: 0.3054
+Epoch 4/15 | Train Loss: 0.0682 | Val Loss: 0.3080
+I-score: 0.5960 | G-score: 0.5840 | OOD G-score: 0.4700
+Saved model for epoch 4
+Epoch 5/15 | Train Loss: 0.0638 | Val Loss: 0.3007
+I-score: 0.5760 | G-score: 0.5680 | OOD G-score: 0.4600
+Saved model for epoch 5
+New best model at epoch 5 with val_loss: 0.3007
+Epoch 6/15 | Train Loss: 0.0543 | Val Loss: 0.2945
+I-score: 0.6240 | G-score: 0.5640 | OOD G-score: 0.4550
+GPU Memory: 298.8MB / 32501.1MB (0.9%)
+Cleaned GPU cache
+GPU Memory: 298.8MB / 32501.1MB (0.9%)
+Saved model for epoch 6
+New best model at epoch 6 with val_loss: 0.2945
+Epoch 7/15 | Train Loss: 0.0488 | Val Loss: 0.2895
+I-score: 0.6440 | G-score: 0.5920 | OOD G-score: 0.4650
+Saved model for epoch 7
+New best model at epoch 7 with val_loss: 0.2895
+Epoch 8/15 | Train Loss: 0.0424 | Val Loss: 0.2893
+I-score: 0.5740 | G-score: 0.6100 | OOD G-score: 0.5700
+Saved model for epoch 8
+New best model at epoch 8 with val_loss: 0.2893
+Epoch 9/15 | Train Loss: 0.0360 | Val Loss: 0.2807
+I-score: 0.6100 | G-score: 0.5860 | OOD G-score: 0.4650
+GPU Memory: 298.8MB / 32501.1MB (0.9%)
+Cleaned GPU cache
+GPU Memory: 298.8MB / 32501.1MB (0.9%)
+Saved model for epoch 9
+New best model at epoch 9 with val_loss: 0.2807
+Epoch 10/15 | Train Loss: 0.0337 | Val Loss: 0.2807
+I-score: 0.5920 | G-score: 0.6360 | OOD G-score: 0.4650
+Saved model for epoch 10
+Epoch 11/15 | Train Loss: 0.0276 | Val Loss: 0.2812
+I-score: 0.6000 | G-score: 0.6260 | OOD G-score: 0.4550
+Saved model for epoch 11
+Epoch 12/15 | Train Loss: 0.0258 | Val Loss: 0.2802
+I-score: 0.6120 | G-score: 0.6100 | OOD G-score: 0.4950
+GPU Memory: 298.8MB / 32501.1MB (0.9%)
+Cleaned GPU cache
+GPU Memory: 298.8MB / 32501.1MB (0.9%)
+Saved model for epoch 12
+New best model at epoch 12 with val_loss: 0.2802
+Epoch 13/15 | Train Loss: 0.0234 | Val Loss: 0.2827
+I-score: 0.5820 | G-score: 0.6600 | OOD G-score: 0.4550
+Saved model for epoch 13
+Epoch 14/15 | Train Loss: 0.0235 | Val Loss: 0.2710
+I-score: 0.5680 | G-score: 0.6140 | OOD G-score: 0.4250
+Saved model for epoch 14
+New best model at epoch 14 with val_loss: 0.2710
+Epoch 15/15 | Train Loss: 0.0208 | Val Loss: 0.2716
+I-score: 0.5900 | G-score: 0.6360 | OOD G-score: 0.4800
+GPU Memory: 298.8MB / 32501.1MB (0.9%)
+Cleaned GPU cache
+GPU Memory: 298.8MB / 32501.1MB (0.9%)
+Saved model for epoch 15
+Evaluating with threshold=0.0
+Threshold: 0.0 | I-score: 0.4890 | G-score: 0.5050 | OOD G-score: 0.5060
+Evaluating with threshold=10.7
+Threshold: 10.7 | I-score: 0.5790 | G-score: 0.5440 | OOD G-score: 0.5260
+Evaluating with threshold=21.3
+Threshold: 21.3 | I-score: 0.5960 | G-score: 0.6430 | OOD G-score: 0.4940
+Evaluating with threshold=32.0
+Threshold: 32.0 | I-score: 0.5680 | G-score: 0.5740 | OOD G-score: 0.5320
+Job finished on Mon Apr 28 15:47:25 EDT 2025

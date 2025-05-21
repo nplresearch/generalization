@@ -1,0 +1,2 @@
+/var/spool/slurmd/job48489694/slurm_script: line 42: syntax error near unexpected token `:'
+/var/spool/slurmd/job48489694/slurm_script: line 42: `if torch.cuda.is_available():'
