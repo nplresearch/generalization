@@ -1,0 +1,21 @@
+data:
+  batch_size: 32
+  feature_dim: 64
+  noise_level: 0.1
+  sequence_len: 3
+  task_type: linear
+model:
+  attention_type: softmax
+  hidden_dim: 128
+  num_layers: 2
+training:
+  learning_rate: 0.001
+  num_epochs: 100
+  patience: 10
+  weight_decay: 1.0e-05
+visualization:
+  dpi: 100
+  figsize:
+  - 10
+  - 8
+  style: seaborn
