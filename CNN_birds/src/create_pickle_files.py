@@ -18,7 +18,7 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 ALPHA_VALUES = [0.0, 0.25, 0.5, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0]
 
 # Define date patterns to filter model directories
-DATE_PATTERNS = ["20250513_*", "20250514_*"]
+DATE_PATTERNS = ["20250513_*", "20250514_*"] #UPDATE THIS AS NEEDED
 
 # Function to load model data directly from the .pt file
 def load_model_metrics(model_path):

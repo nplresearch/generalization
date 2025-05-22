@@ -18,7 +18,7 @@ The `birdsbirdsbirds.py` script trains neural networks with varying degrees of e
 1. Clone this repository:
    ```bash
    git clone <repository-url>
-   cd generalization_transformer
+   cd generalization
    ```
 
 2. Create and activate the conda environment:
@@ -31,7 +31,7 @@ The `birdsbirdsbirds.py` script trains neural networks with varying degrees of e
 ## Basic Usage
 
 ```bash
-cd generalization_transformer/src
+cd generalization/src
 python birdsbirdsbirds.py
 ```
 
@@ -99,6 +99,29 @@ The script implements:
 - Threshold-based similarity judgments for generalization and identification
 - Triplet-based loss function that aligns embedding distances with evolutionary distances
 - Evaluation across multiple thresholds to analyze the G-I tradeoff
+
+## Running the Analysis Pipeline
+
+To reproduce the results, follow these steps:
+
+1. Train models with different alpha values using `birdsbirdsbirds.py`
+2. Generate pickle files for analysis using `create_pickle_files.py` 
+3. Run the analysis notebooks:
+   - `figure.ipynb` - Generates the main figures
+   - `supp.ipynb` - Generates supplementary analyses
+
+### Important Notes
+
+- Before running `create_pickle_files.py`, update the `DATE_PATTERNS` variable with your specific training run timestamps. The default is set to:
+  ```python
+  DATE_PATTERNS = ["20250513_*", "20250514_*"]
+  ```
+  Replace these with the actual dates of your training runs (found in the directory names under `data/models/`).
+
+- The notebook files expect specific paths for data files. If you experience issues with file paths, check that:
+  - The evolutionary distance matrix is at `../data/evo_distance_matrix.npy`
+  - The training data is accessible at `../src/training_data.pkl` and `../results/output/threshold_data.pkl`
+  - The supplementary data is at `../results/supplementary/training_dynamics_raw.pkl`
 
 ## Notes
 
