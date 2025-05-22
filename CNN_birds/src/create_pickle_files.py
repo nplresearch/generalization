@@ -2,15 +2,16 @@ import os
 import glob
 import torch
 import numpy as np
+import pandas as pd
 import pickle
 import matplotlib.pyplot as plt
 import seaborn as sns
 from collections import defaultdict
 
 # Set up paths
-BASE_MODEL_DIR = "../repos/generalization_transformer/data/models"
-RESULTS_DIR = "../repos/generalization_transformer/results"
-OUTPUT_DIR = "../repos/generalization_transformer/results/output"
+BASE_MODEL_DIR = "../data/models"
+BASE_RESULTS_DIR = "../results"
+OUTPUT_DIR = "../results/output"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # Define the alpha values we're interested in
@@ -66,13 +67,58 @@ def collect_training_trajectories():
     
     return data
 
+# Function to collect threshold data for G-I tradeoff plots
+def collect_threshold_data():
+    print("Collecting threshold data...")
+    # Structure: threshold -> alpha -> seed -> metrics
+    data = defaultdict(lambda: defaultdict(list))
+    # Structure for final metrics: alpha -> threshold -> [list of metrics across seeds]
+    final_data = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+    
+    for date_pattern in DATE_PATTERNS:
+        # Find all results directories matching the date pattern
+        results_dirs = glob.glob(os.path.join(BASE_RESULTS_DIR, f"models_{date_pattern}"))
+        
+        for results_dir in results_dirs:
+            # Extract seed/run from directory name
+            seed = os.path.basename(results_dir).replace("models_", "")
+            
+            # Find all threshold results files in this directory
+            csv_files = glob.glob(os.path.join(results_dir, "threshold_results_alpha*.csv"))
+            
+            for csv_file in csv_files:
+                # Extract alpha from filename
+                alpha_str = csv_file.split("threshold_results_alpha")[1].split(".csv")[0]
+                try:
+                    alpha = float(alpha_str)
+                    
+                    if alpha in ALPHA_VALUES:
+                        try:
+                            # Load CSV data
+                            df = pd.read_csv(csv_file)
+                            
+                            # Store data by threshold->alpha->seed
+                            for _, row in df.iterrows():
+                                threshold = row['threshold']
+                                final_data[alpha][threshold]['i_score'].append(row['i_score'])
+                                final_data[alpha][threshold]['g_score'].append(row['g_score'])
+                                final_data[alpha][threshold]['ood_g_score'].append(row['ood_g_score'])
+                                
+                                # We're not using theoretical values for plotting
+                        except Exception as e:
+                            print(f"Error processing {csv_file}: {e}")
+                except ValueError:
+                    print(f"Skipping file with invalid alpha: {csv_file}")
+    
+    return final_data
+
 # Function to create evolutionary similarity matrix
 def create_evolutionary_similarity():
     print("Creating evolutionary similarity matrix...")
     
     # First, load the evolutionary distance matrix
     try:
-        evo_distances = np.load("../repos/generalization_transformer/data/evo_distance_matrix.npy")
+        evo_distances = np.load("../data/evo_distance_matrix.npy")
         print(f"Loaded evolutionary distance matrix with shape {evo_distances.shape}")
     except Exception as e:
         print(f"Error loading evolutionary distance matrix: {e}")
@@ -112,6 +158,15 @@ def main():
     
     # Also save to output directory
     save_data(training_data, os.path.join(OUTPUT_DIR, 'training_data.pkl'))
+    
+    # Create threshold data pickle
+    threshold_data = collect_threshold_data()
+    
+    # Save to current directory (for compatibility with original path)
+    save_data(threshold_data, 'threshold_data.pkl')
+    
+    # Also save to output directory
+    save_data(threshold_data, os.path.join(OUTPUT_DIR, 'threshold_data.pkl'))
     
     # Create evolutionary similarity matrix
     evo_similarity = create_evolutionary_similarity()
