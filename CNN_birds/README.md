@@ -4,7 +4,7 @@ This repository contains code for evaluating the trade-off between generalizatio
 
 ## Overview
 
-The `birdsbirdsbirds_v2.py` script trains neural networks with varying degrees of evolutionary distance alignment to study how embedding spaces can balance the ability to identify individual species while maintaining generalization capabilities that reflect evolutionary relationships.
+The `birdsbirdsbirds.py` script trains neural networks with varying degrees of evolutionary distance alignment to study how embedding spaces can balance the ability to identify individual species while maintaining generalization capabilities that reflect evolutionary relationships.
 
 ## Prerequisites
 
@@ -32,7 +32,7 @@ The `birdsbirdsbirds_v2.py` script trains neural networks with varying degrees o
 
 ```bash
 cd generalization_transformer/src
-python birdsbirdsbirds_v2.py
+python birdsbirdsbirds.py
 ```
 
 ## Command Line Arguments
@@ -54,32 +54,32 @@ The script supports several command line arguments:
 
 ### Train with default settings:
 ```bash
-python birdsbirdsbirds_v2.py
+python birdsbirdsbirds.py
 ```
 
 ### Train with focus on identification:
 ```bash
-python birdsbirdsbirds_v2.py --alpha 0.0
+python birdsbirdsbirds.py --alpha 0.0
 ```
 
 ### Train with focus on generalization:
 ```bash
-python birdsbirdsbirds_v2.py --alpha 1.0
+python birdsbirdsbirds.py --alpha 1.0
 ```
 
 ### Train with balanced approach and longer training:
 ```bash
-python birdsbirdsbirds_v2.py --alpha 0.5 --epochs 30
+python birdsbirdsbirds.py --alpha 0.5 --epochs 30
 ```
 
 ### Run multiple experiments with different alpha values:
 ```bash
-python birdsbirdsbirds_v2.py --alpha 0.0 0.25 0.5 0.75 1.0
+python birdsbirdsbirds.py --alpha 0.0 0.25 0.5 0.75 1.0
 ```
 
 ### Specify memory-efficient settings for large models:
 ```bash
-python birdsbirdsbirds_v2.py --batch-size 4 --grad-accum 8
+python birdsbirdsbirds.py --batch-size 4 --grad-accum 8
 ```
 
 ## Output

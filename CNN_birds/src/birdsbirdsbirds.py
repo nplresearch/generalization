@@ -5,6 +5,10 @@ import torch
 import torchvision.transforms as transforms
 import torchvision.models as models
 import sys
+import argparse  # Add argparse for command line arguments
+
+# Add memory configuration for PyTorch CUDA allocator
+os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True,max_split_size_mb:128'
 
 # Force matplotlib to use Agg backend which doesn't require GUI
 import matplotlib
@@ -19,6 +23,15 @@ from torch.utils.data import Dataset, DataLoader
 from sklearn.model_selection import train_test_split
 import random
 import datetime
+import gc  # Add garbage collection
+
+# Enhanced memory management function
+def free_memory():
+    """Free up GPU memory aggressively"""
+    gc.collect()
+    torch.cuda.empty_cache()
+    if torch.cuda.is_available():
+        torch.cuda.synchronize()
 
 # Define global device variable
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -30,11 +43,24 @@ def log_step(message):
     timestamp = datetime.datetime.now().strftime("%H:%M:%S")
     print(f"[{timestamp}] {message}")
 
+# Enhanced GPU memory monitoring
+def print_gpu_memory_usage(label=""):
+    """Print current GPU memory usage with an optional label"""
+    if torch.cuda.is_available():
+        used = torch.cuda.memory_allocated() / 1024**2
+        cached = torch.cuda.memory_reserved() / 1024**2
+        total = torch.cuda.get_device_properties(0).total_memory / 1024**2
+        free = (total - used) / 1024**2
+        print(f"GPU Memory [{label}]: Used {used:.1f}MB | Cached {cached:.1f}MB | Free {free:.1f}MB | Total {total:.1f}MB")
+
+# Print initial memory status
+print_gpu_memory_usage("Initial")
+
 log_step("Starting script execution")
 
 # Load and parse the Newick tree file
 log_step("Loading Newick tree file...")
-tree = dendropy.Tree.get(path="/work/JeFeSpace/generalization_transformer/data/birds_species.nwk", schema="newick")
+tree = dendropy.Tree.get(path="../data/birds_species.nwk", schema="newick")
 log_step("Tree file loaded successfully")
 
 # Function to calculate evolutionary distance between two species
@@ -98,7 +124,7 @@ def get_evolutionary_distance(tree, species1, species2):
 
 # 3. Load CUB dataset and build mapping automatically
 log_step("Loading CUB dataset...")
-cub_root = '/work/JeFeSpace/generalization_transformer/CUB_200_2011'
+cub_root = '../CUB_200_2011'
 images_dir = os.path.join(cub_root, 'images')
 
 # Read class names
@@ -244,6 +270,9 @@ for i, sp1 in enumerate(available_species):
             evo_distances[i, j] = distance
 log_step("Evolutionary distance matrix built")
 
+# save the evolutionary distance matrix
+np.save("../data/evo_distance_matrix.npy", evo_distances)
+
 # Load images and extract features
 # Use a pre-trained CNN to extract features
 log_step("Loading ResNet50 model (this may take some time)...")
@@ -333,8 +362,165 @@ for i, species in enumerate(available_species):
         features_by_species[species] = np.array(species_features)
         print(f"Processed {len(species_features)} images for {species}")
 
-# Run the tests with varying thresholds (as in previous example)
-def run_tests(threshold, n_trials=500):
+# ===================== NEW FUNCTIONS FOR MILLER'S LAW ANALYSIS =====================
+
+def calculate_average_ball_measure(threshold, distances_matrix):
+    """
+    Calculate average measure of a ball with radius threshold.
+    
+    For each point, compute the fraction of points within threshold distance,
+    then return the average and variance across all points.
+    
+    Args:
+        threshold: Ball radius (epsilon value)
+        distances_matrix: Matrix of distances between points
+    
+    Returns:
+        avg_ball: Average measure of balls with radius threshold
+        var_ball: Variance of ball measures
+    """
+    ball_measures = []
+    n = distances_matrix.shape[0]
+    
+    for i in range(n):
+        # Count points within threshold distance (including the point itself)
+        ball_size = np.sum(distances_matrix[i] <= threshold)
+        ball_measure = ball_size / n  # Normalize
+        ball_measures.append(ball_measure)
+    
+    avg_ball = np.mean(ball_measures)
+    var_ball = np.var(ball_measures)
+    
+    return avg_ball, var_ball
+
+def calculate_alpha_term(distances_matrix, epsilon=1e-5):
+    """
+    Calculate the α term for non-discriminative spaces.
+    
+    α = ∫₀^∞ ⟨σ(r)/2⟩dr
+    
+    For discrete spaces, approximated by summing over unique distances.
+    
+    Args:
+        distances_matrix: Matrix of distances between points
+        epsilon: Tolerance for considering points as being at the same distance
+    
+    Returns:
+        alpha: The alpha term value
+    """
+    # Get unique distances (rounded to reduce near-duplicates)
+    rounded_distances = np.round(distances_matrix.flatten(), int(-np.log10(epsilon)))
+    unique_distances = np.unique(rounded_distances)
+    
+    alpha = 0
+    n = distances_matrix.shape[0]
+    
+    for r in unique_distances:
+        if r == 0:  # Skip zero distance (self distance)
+            continue
+            
+        # Calculate average measure of spheres with radius r
+        sphere_measures = []
+        
+        for i in range(n):
+            # Count points at exactly distance r (or within a small epsilon)
+            sphere_size = np.sum(np.abs(distances_matrix[i] - r) < epsilon)
+            sphere_measure = sphere_size / n  # Normalize
+            sphere_measures.append(sphere_measure)
+        
+        avg_sphere_measure = np.mean(sphere_measures)
+        alpha += (avg_sphere_measure / 2)
+    
+    return alpha
+
+def theoretical_G_score(threshold, distances_matrix):
+    """
+    Calculate theoretical G(ε) according to Theorem 1.
+    
+    G(ε) = (1/2)(1 + α) + ⟨b(ε)⟩ - ⟨b(ε)⟩² - Var(b(ε))
+    
+    Args:
+        threshold: The threshold value (epsilon)
+        distances_matrix: Matrix of distances between points
+    
+    Returns:
+        G: Theoretical generalization score
+    """
+    avg_ball, var_ball = calculate_average_ball_measure(threshold, distances_matrix)
+    alpha_term = calculate_alpha_term(distances_matrix)
+    
+    G = (1/2) * (1 + alpha_term) + avg_ball - avg_ball**2 - var_ball
+    return G
+
+def theoretical_I_score(threshold, distances_matrix):
+    """
+    Calculate theoretical I(ε) according to Theorem 2.
+    
+    I(ε) = 1 - (1/2)⟨b(ε)⟩
+    
+    Args:
+        threshold: The threshold value (epsilon)
+        distances_matrix: Matrix of distances between points
+    
+    Returns:
+        I: Theoretical identification score
+    """
+    avg_ball, _ = calculate_average_ball_measure(threshold, distances_matrix)
+    
+    I = 1 - (1/2) * avg_ball
+    return I
+
+def is_discriminative(distances_matrix, epsilon=1e-5):
+    """
+    Check if the space is discriminative according to Definition 1.
+    
+    A space is discriminative if ⟨σ(r)⟩ = 0 ∀r ≥ 0,
+    meaning no two points are exactly the same distance from a third point.
+    
+    Args:
+        distances_matrix: Matrix of distances between points
+        epsilon: Tolerance for considering points as being at the same distance
+    
+    Returns:
+        bool: True if space is discriminative, False otherwise
+    """
+    # Get unique distances (rounded to reduce near-duplicates)
+    rounded_distances = np.round(distances_matrix.flatten(), int(-np.log10(epsilon)))
+    unique_distances = np.unique(rounded_distances)
+    
+    n = distances_matrix.shape[0]
+    
+    for r in unique_distances:
+        if r == 0:  # Skip zero distance (self distance)
+            continue
+            
+        # Check if there are any pairs of points at the same distance from a third point
+        for i in range(n):
+            # Find points at distance r from point i
+            at_dist_r = np.where(np.abs(distances_matrix[i] - r) < epsilon)[0]
+            
+            if len(at_dist_r) >= 2:
+                # Found at least two points at the same distance from point i
+                return False
+    
+    return True
+
+# Modified run_tests function to return both empirical and theoretical values
+def run_tests(threshold, distances_matrix, n_trials=500):
+    """
+    Run empirical tests and calculate theoretical values for G-I tradeoff.
+    
+    Args:
+        threshold: The threshold value (epsilon)
+        distances_matrix: Matrix of distances between points
+        n_trials: Number of trials for empirical tests
+    
+    Returns:
+        g_empirical: Empirical generalization score
+        i_empirical: Empirical identification score
+        g_theoretical: Theoretical generalization score
+        i_theoretical: Theoretical identification score
+    """
     g_correct = 0
     g_total = 0
     i_correct = 0
@@ -365,9 +551,10 @@ def run_tests(threshold, n_trials=500):
         d2 = np.linalg.norm(x2_feat - p_feat)
         
         # Ground truth (evolutionary distance)
-        ed1 = evo_distances[species_indices[x1], species_indices[p]]
-        ed2 = evo_distances[species_indices[x2], species_indices[p]]
+        ed1 = distances_matrix[species_indices[x1], species_indices[p]]
+        ed2 = distances_matrix[species_indices[x2], species_indices[p]]
         true_closer = x1 if ed1 < ed2 else x2
+        
         
         # Apply threshold for similarity
         sim1 = 1 if d1 <= threshold else 0
@@ -419,7 +606,15 @@ def run_tests(threshold, n_trials=500):
             i_correct += 1
         i_total += 1
     
-    return g_correct/g_total, i_correct/i_total
+    # Calculate empirical scores
+    g_empirical = g_correct/g_total if g_total > 0 else 0
+    i_empirical = i_correct/i_total if i_total > 0 else 0
+    
+    # Calculate theoretical scores
+    g_theoretical = theoretical_G_score(threshold, distances_matrix)
+    i_theoretical = theoretical_I_score(threshold, distances_matrix)
+    
+    return g_empirical, i_empirical, g_theoretical, i_theoretical
 
 # Run experiments with different thresholds
 # First determine a reasonable range of thresholds based on feature distances
@@ -456,62 +651,117 @@ else:
 
 print(f"Threshold range: {thresholds.min():.2f} to {thresholds.max():.2f}")
 
-g_scores = []
-i_scores = []
+# First, check if the space is discriminative
+is_disc = is_discriminative(evo_distances)
+print(f"Is the evolutionary distance space discriminative? {is_disc}")
 
-for threshold in thresholds:
-    g, i = run_tests(threshold, n_trials=2000)  # More trials for stability
-    g_scores.append(g)
-    i_scores.append(i)
-    print(f"Threshold: {threshold:.1f}, G: {g:.3f}, I: {i:.3f}")
+# # Run tests and store results
+# g_empirical_scores = []
+# i_empirical_scores = []
+# g_theoretical_scores = []
+# i_theoretical_scores = []
 
-# Create a clean, professional plot
-if len(all_distances) > 0:  # Only try plotting if we have data
-    plt.figure(figsize=(10, 8))
+# for threshold in thresholds:
+#     g_emp, i_emp, g_theo, i_theo = run_tests(threshold, evo_distances, n_trials=2000)
+#     g_empirical_scores.append(g_emp)
+#     i_empirical_scores.append(i_emp)
+#     g_theoretical_scores.append(g_theo)
+#     i_theoretical_scores.append(i_theo)
+#     print(f"Threshold: {threshold:.1f}, G_emp: {g_emp:.3f}, G_theo: {g_theo:.3f}, I_emp: {i_emp:.3f}, I_theo: {i_theo:.3f}")
+
+# # Create a clean, professional plot with both empirical and theoretical curves
+# if len(all_distances) > 0:  # Only try plotting if we have data
+#     plt.figure(figsize=(10, 8))
     
-    # Create a color gradient based on threshold value
-    cmap = plt.cm.viridis
-    norm = plt.Normalize(thresholds.min(), thresholds.max())
-    colors = cmap(norm(thresholds))
+#     # Create a color gradient based on threshold value
+#     cmap = plt.cm.viridis
+#     norm = plt.Normalize(thresholds.min(), thresholds.max())
+#     colors = cmap(norm(thresholds))
     
-    # Plot each point with its own color from the gradient
-    for i in range(len(thresholds)):
-        if i > 0:
-            plt.plot([g_scores[i-1], g_scores[i]], [i_scores[i-1], i_scores[i]], 
-                     '-', color=colors[i], linewidth=2.5)
-        plt.plot(g_scores[i], i_scores[i], 'o', color=colors[i], 
-                 markersize=8, markeredgecolor='white', markeredgewidth=1)
+#     # Plot empirical curves
+#     plt.plot(g_empirical_scores, i_empirical_scores, '-', color='blue', 
+#              linewidth=2.5, label='Empirical', alpha=0.8)
+    
+#     # Plot theoretical curves
+#     plt.plot(g_theoretical_scores, i_theoretical_scores, '--', color='red', 
+#              linewidth=2.5, label='Theoretical (Miller\'s Law)', alpha=0.8)
+    
+#     # Plot individual points with color gradient
+#     for i in range(len(thresholds)):
+#         plt.plot(g_empirical_scores[i], i_empirical_scores[i], 'o', color=colors[i], 
+#                  markersize=6, markeredgecolor='white', markeredgewidth=1)
 
-    plt.xlabel('Generalization (G)', fontsize=14, fontweight='bold')
-    plt.ylabel('Identification (I)', fontsize=14, fontweight='bold')
-    plt.title('Generalization-Identification Tradeoff in Bird Species', 
-              fontsize=16, fontweight='bold', pad=20)
-    plt.grid(True, linestyle='--', alpha=0.7)
+#     plt.xlabel('Generalization (G)', fontsize=14, fontweight='bold')
+#     plt.ylabel('Identification (I)', fontsize=14, fontweight='bold')
+#     plt.title('Generalization-Identification Tradeoff in Bird Species: Empirical vs Theoretical', 
+#               fontsize=16, fontweight='bold', pad=20)
+#     plt.grid(True, linestyle='--', alpha=0.7)
+#     plt.legend(loc='best', fontsize=12)
 
-    # Choose only a few points to annotate to avoid clutter
-    annotation_indices = np.linspace(0, len(thresholds)-1, 8, dtype=int)
-    for i in annotation_indices:
-        plt.annotate(f"ε={thresholds[i]:.1f}", 
-                   (g_scores[i], i_scores[i]),
-                   xytext=(10, 0), textcoords="offset points",
-                   fontsize=10, fontweight='bold',
-                   bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.8))
+#     # Choose only a few points to annotate to avoid clutter
+#     annotation_indices = np.linspace(0, len(thresholds)-1, 8, dtype=int)
+#     for i in annotation_indices:
+#         plt.annotate(f"ε={thresholds[i]:.1f}", 
+#                    (g_empirical_scores[i], i_empirical_scores[i]),
+#                    xytext=(10, 0), textcoords="offset points",
+#                    fontsize=10, fontweight='bold',
+#                    bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.8))
 
-    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
-    ax = plt.gca()  # Get current axes reference
-    cbar = plt.colorbar(sm, ax=ax)
-    cbar.set_label('Threshold (ε)', fontsize=12, fontweight='bold')
+#     sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+#     ax = plt.gca()  # Get current axes reference
+#     cbar = plt.colorbar(sm, ax=ax)
+#     cbar.set_label('Threshold (ε)', fontsize=12, fontweight='bold')
 
-    plt.tight_layout()
+#     plt.tight_layout()
 
-    plt.xlim([0.45, 0.85])
-    plt.ylim([0.45, 0.85])
+#     plt.xlim([0.45, 0.85])
+#     plt.ylim([0.45, 0.85])
 
-    plt.savefig('bird_g_i_tradeoff.png', dpi=300, bbox_inches='tight')
-    # plt.show()  # Comment out this line
-    plt.close()
-else:
-    print("WARNING: No distances available for plotting - skipping visualization")
+#     plt.savefig('bird_g_i_tradeoff_with_theory.png', dpi=300, bbox_inches='tight')
+#     plt.close()
+    
+#     # Create a plot to analyze alpha and ball measure
+#     plt.figure(figsize=(12, 5))
+    
+#     # Plot 1: Ball measure vs threshold
+#     plt.subplot(1, 2, 1)
+#     ball_measures = []
+#     ball_variances = []
+    
+#     for threshold in thresholds:
+#         avg_ball, var_ball = calculate_average_ball_measure(threshold, evo_distances)
+#         ball_measures.append(avg_ball)
+#         ball_variances.append(var_ball)
+    
+#     plt.plot(thresholds, ball_measures, 'b-', linewidth=2.5, label='Average ball measure')
+#     plt.plot(thresholds, ball_variances, 'r--', linewidth=2.5, label='Ball measure variance')
+#     plt.xlabel('Threshold (ε)', fontsize=12, fontweight='bold')
+#     plt.ylabel('Measure', fontsize=12, fontweight='bold')
+#     plt.title('Ball Measure vs. Threshold', fontsize=14, fontweight='bold')
+#     plt.grid(True, linestyle='--', alpha=0.7)
+#     plt.legend(loc='best')
+    
+#     # Plot 2: Theoretical G scores with/without variance term
+#     plt.subplot(1, 2, 2)
+#     alpha_term = calculate_alpha_term(evo_distances)
+#     g_no_var = [(1/2) * (1 + alpha_term) + ball_measures[i] - ball_measures[i]**2 
+#                 for i, _ in enumerate(thresholds)]
+    
+#     plt.plot(thresholds, g_theoretical_scores, 'b-', linewidth=2.5, 
+#              label='G(ε) with variance term')
+#     plt.plot(thresholds, g_no_var, 'r--', linewidth=2.5, 
+#              label='G(ε) without variance term')
+#     plt.xlabel('Threshold (ε)', fontsize=12, fontweight='bold')
+#     plt.ylabel('G(ε)', fontsize=12, fontweight='bold')
+#     plt.title('Effect of Variance Term on G(ε)', fontsize=14, fontweight='bold')
+#     plt.grid(True, linestyle='--', alpha=0.7)
+#     plt.legend(loc='best')
+    
+#     plt.tight_layout()
+#     plt.savefig('ball_measure_analysis.png', dpi=300)
+#     plt.close()
+# else:
+#     print("WARNING: No distances available for plotting - skipping visualization")
 
 # Create data splitting functions for both in-distribution and OOD evaluation
 def create_data_splits(available_species, test_size=0.2, ood_size=0.15, random_state=42):
@@ -667,12 +917,14 @@ class BirdDataset(Dataset):
         }
 
 # At beginning after imports, add a memory monitoring function
-def print_gpu_memory_usage():
-    """Print current GPU memory usage"""
+def print_gpu_memory_usage(label=""):
+    """Print current GPU memory usage with an optional label"""
     if torch.cuda.is_available():
         used = torch.cuda.memory_allocated() / 1024**2
+        cached = torch.cuda.memory_reserved() / 1024**2
         total = torch.cuda.get_device_properties(0).total_memory / 1024**2
-        print(f"GPU Memory: {used:.1f}MB / {total:.1f}MB ({used/total*100:.1f}%)")
+        free = (total - used) / 1024**2
+        print(f"GPU Memory [{label}]: Used {used:.1f}MB | Cached {cached:.1f}MB | Free {free:.1f}MB | Total {total:.1f}MB")
 
 # Model definition with feature extraction abilities
 class GITradeoffModel(nn.Module):
@@ -971,12 +1223,19 @@ def train_with_gi_tradeoff(alpha=0.5, epochs=10, batch_size=16, lr=0.001, random
     """
     Train the model with controllable G-I tradeoff and evaluate both in-distribution and OOD
     """
+    # Lower default batch size if using GPU to save memory
+    if torch.cuda.is_available() and batch_size > 8:
+        orig_batch_size = batch_size
+        batch_size = min(batch_size, 8)  # Limit batch size on GPU
+        gradient_accumulation_steps = max(gradient_accumulation_steps, orig_batch_size // batch_size)
+        print(f"Adjusted batch size to {batch_size} with {gradient_accumulation_steps} gradient accumulation steps")
+    
     # Create timestamp for folder names
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     
     # Create directories for models and results
-    model_dir = f"/work/JeFeSpace/generalization_transformer/data/models/{timestamp}"
-    results_dir = f"/work/JeFeSpace/generalization_transformer/results/models_{timestamp}"
+    model_dir = f"../data/models/{timestamp}"
+    results_dir = f"../results/models_{timestamp}"
     
     os.makedirs(model_dir, exist_ok=True)
     os.makedirs(results_dir, exist_ok=True)
@@ -985,6 +1244,7 @@ def train_with_gi_tradeoff(alpha=0.5, epochs=10, batch_size=16, lr=0.001, random
     print(f"Saving results to: {results_dir}")
     
     print(f"Training using: {device}")
+    print_gpu_memory_usage("Before data prep")
     
     # Create data splits
     data_splits = create_data_splits(available_species, 
@@ -1007,6 +1267,10 @@ def train_with_gi_tradeoff(alpha=0.5, epochs=10, batch_size=16, lr=0.001, random
     # Species indices for evolutionary distances
     species_indices = {sp: i for i, sp in enumerate(available_species)}
     
+    # Free memory before creating datasets
+    free_memory()
+    print_gpu_memory_usage("Before dataset creation")
+    
     # Create datasets
     train_dataset = BirdDataset(available_species, features_by_species, 
                                evo_distances, species_indices, 
@@ -1024,23 +1288,47 @@ def train_with_gi_tradeoff(alpha=0.5, epochs=10, batch_size=16, lr=0.001, random
                              evo_distances, species_indices, 
                              image_splits, split='ood', transform=transform)
     
+    # Free memory after dataset creation
+    free_memory()
+    print_gpu_memory_usage("After dataset creation")
+    
+    # Reduce num_workers on GPU to reduce memory usage
+    num_workers = 2 if torch.cuda.is_available() else 4
+    
     # Create dataloaders
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size)
-    ood_loader = DataLoader(ood_dataset, batch_size=batch_size)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, 
+                             num_workers=num_workers, pin_memory=True, prefetch_factor=2)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, 
+                            num_workers=num_workers, pin_memory=True)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, 
+                             num_workers=num_workers, pin_memory=True) 
+    ood_loader = DataLoader(ood_dataset, batch_size=batch_size, 
+                            num_workers=num_workers, pin_memory=True)
     
     # Initialize model
     num_classes = len(train_species)
+    
+    # Free memory before model creation
+    free_memory()
+    print_gpu_memory_usage("Before model creation")
+    
     model = GITradeoffModel(num_classes, alpha=alpha).to(device)
     
     # Loss functions
     id_criterion = nn.CrossEntropyLoss()
-    gen_criterion = EvolutionaryDistanceLoss(species_indices, evo_distances).to(device)
+    
+    # Move evo_distances to CPU to save GPU memory and only send to GPU when needed
+    evo_distances_cpu = evo_distances
+    if isinstance(evo_distances_cpu, torch.Tensor) and evo_distances_cpu.is_cuda:
+        evo_distances_cpu = evo_distances_cpu.cpu()
+    
+    gen_criterion = EvolutionaryDistanceLoss(species_indices, evo_distances_cpu).to(device)
     
     # Optimizer
     optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9, weight_decay=1e-4)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=3, factor=0.1)
+    
+    print_gpu_memory_usage("Before training")
     
     # Tracking metrics
     train_losses = []
@@ -1057,43 +1345,57 @@ def train_with_gi_tradeoff(alpha=0.5, epochs=10, batch_size=16, lr=0.001, random
     best_epoch = -1
     
     # Training loop
+    scaler = torch.cuda.amp.GradScaler() if torch.cuda.is_available() else None
     for epoch in range(epochs):
         model.train()
         epoch_loss = 0.0
         optimizer.zero_grad()  # Zero gradients at the beginning of epoch
         
         for batch_idx, batch in enumerate(train_loader):
+            # Move data to device
             images = batch['image'].to(device)
             labels = batch['label'].to(device)
             species = batch['species']
             
-            # Forward pass
-            outputs = model(images)
-            features = outputs['features']
-            logits = outputs['logits']
+            # Free some memory before forward pass
+            if batch_idx % 10 == 0:
+                free_memory()
             
-            # Calculate losses
-            id_loss = id_criterion(logits, labels)
-            gen_loss = gen_criterion(features, species)
+            with torch.cuda.amp.autocast(enabled=torch.cuda.is_available()):
+                outputs = model(images)
+                features = outputs['features']
+                logits = outputs['logits']
+                
+                id_loss = id_criterion(logits, labels)
+                gen_loss = gen_criterion(features, species)
+                
+                loss = (1 - alpha) * id_loss + alpha * gen_loss
             
-            # Combined loss with alpha parameter
-            loss = (1 - alpha) * id_loss + alpha * gen_loss
-            
-            # Scale loss by accumulation steps
-            loss = loss / gradient_accumulation_steps
-            loss.backward()
+            scaler.scale(loss).backward()
             
             # Only step optimizer after accumulating gradients
             if (batch_idx + 1) % gradient_accumulation_steps == 0:
-                optimizer.step()
+                scaler.step(optimizer)
+                scaler.update()
                 optimizer.zero_grad()
             
             epoch_loss += loss.item() * gradient_accumulation_steps  # Scale back for reporting
+            
+            # Explicitly free memory for large objects
+            del images, labels, outputs, features, logits, loss, id_loss, gen_loss
+            
+            # Add periodic memory cleanup during training
+            if (batch_idx + 1) % 10 == 0:
+                free_memory()
         
         # Make sure to step optimizer for any remaining gradients at end of epoch
         if len(train_loader) % gradient_accumulation_steps != 0:
-            optimizer.step()
-            optimizer.zero_grad()
+            scaler.step(optimizer)
+            scaler.update()
+        
+        # Free memory before validation
+        free_memory()
+        print_gpu_memory_usage(f"Epoch {epoch+1} after training")
         
         # Validate
         model.eval()
@@ -1114,6 +1416,9 @@ def train_with_gi_tradeoff(alpha=0.5, epochs=10, batch_size=16, lr=0.001, random
                 
                 loss = (1 - alpha) * id_loss + alpha * gen_loss
                 val_loss += loss.item()
+                
+                # Free memory
+                del images, labels, outputs, features, logits, loss, id_loss, gen_loss
         
         # Average losses
         train_loss = epoch_loss / len(train_loader)
@@ -1122,21 +1427,31 @@ def train_with_gi_tradeoff(alpha=0.5, epochs=10, batch_size=16, lr=0.001, random
         train_losses.append(train_loss)
         val_losses.append(val_loss)
         
-        # Evaluate metrics with set threshold of 15.0
-        i_score = evaluate_identification(model, test_loader, device, threshold=15.0)
+        # Free memory before evaluation
+        free_memory()
+        print_gpu_memory_usage(f"Epoch {epoch+1} after validation")
+        
+        # Evaluate metrics with set threshold of 20.0
+        i_score = evaluate_identification(model, test_loader, device, threshold=20.0)
         id_scores.append(i_score)
         
-        g_score = evaluate_generalization(model, threshold=15.0, 
+        # Free memory after each evaluation step
+        free_memory()
+        
+        g_score = evaluate_generalization(model, threshold=20.0, 
                                           species_indices=species_indices,
-                                          evo_distances=evo_distances,
+                                          evo_distances=evo_distances_cpu,
                                           available_species=train_species,
                                           features_by_species=features_by_species,
                                           device=device, n_trials=500)
         g_scores.append(g_score)
         
-        ood_g_score = evaluate_generalization(model, threshold=15.0, 
+        # Free memory after each evaluation step
+        free_memory()
+        
+        ood_g_score = evaluate_generalization(model, threshold=20.0, 
                                              species_indices=species_indices,
-                                             evo_distances=evo_distances,
+                                             evo_distances=evo_distances_cpu,
                                              available_species=ood_species,
                                              features_by_species=features_by_species,
                                              device=device, n_trials=200)
@@ -1147,11 +1462,8 @@ def train_with_gi_tradeoff(alpha=0.5, epochs=10, batch_size=16, lr=0.001, random
         print(f"I-score: {i_score:.4f} | G-score: {g_score:.4f} | OOD G-score: {ood_g_score:.4f}")
         
         # Add periodic GPU memory cleanup
-        if torch.cuda.is_available() and (epoch+1) % 3 == 0:  # Every 3 epochs
-            print_gpu_memory_usage()
-            torch.cuda.empty_cache()
-            print("Cleaned GPU cache")
-            print_gpu_memory_usage()
+        free_memory()
+        print_gpu_memory_usage(f"Epoch {epoch+1} after evaluation")
         
         # Update learning rate
         scheduler.step(val_loss)
@@ -1175,6 +1487,9 @@ def train_with_gi_tradeoff(alpha=0.5, epochs=10, batch_size=16, lr=0.001, random
             best_val_loss = val_loss
             best_epoch = epoch
             print(f"New best model at epoch {epoch+1} with val_loss: {val_loss:.4f}")
+            
+        # Additional memory cleanup at end of each epoch
+        free_memory()
     
     # Use the best model for final evaluation
     best_model_path = os.path.join(model_dir, f"model_alpha{alpha}_epoch{best_epoch+1}.pt")
@@ -1182,7 +1497,8 @@ def train_with_gi_tradeoff(alpha=0.5, epochs=10, batch_size=16, lr=0.001, random
     model.load_state_dict(checkpoint['model_state_dict'])
     
     # Define thresholds to evaluate from 0 to 32
-    thresholds = np.linspace(0, 32, 4)
+    thresholds = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150]
+    # thresholds = np.linspace(0, 32, 33)
     
     # Evaluate final model across all thresholds
     threshold_results = {}
@@ -1192,60 +1508,81 @@ def train_with_gi_tradeoff(alpha=0.5, epochs=10, batch_size=16, lr=0.001, random
         
         # In-distribution evaluation
         i_score = evaluate_identification(model, test_loader, device, threshold=threshold, n_trials=1000)
+        free_memory()  # Free memory after evaluation
+        
         g_score = evaluate_generalization(model, threshold=threshold, 
                                          species_indices=species_indices,
-                                         evo_distances=evo_distances,
+                                         evo_distances=evo_distances_cpu,
                                          available_species=train_species,
                                          features_by_species=features_by_species,
                                          device=device, n_trials=1000)
+        free_memory()  # Free memory after evaluation
         
         # OOD evaluation
         ood_g_score = evaluate_generalization(model, threshold=threshold, 
                                              species_indices=species_indices,
-                                             evo_distances=evo_distances,
+                                             evo_distances=evo_distances_cpu,
                                              available_species=ood_species,
                                              features_by_species=features_by_species,
                                              device=device, n_trials=500)
+        free_memory()  # Free memory after evaluation
+        
+        # Calculate theoretical scores
+        g_theoretical = theoretical_G_score(threshold, evo_distances)
+        i_theoretical = theoretical_I_score(threshold, evo_distances)
         
         threshold_results[threshold] = {
             'i_score': i_score,
             'g_score': g_score,
-            'ood_g_score': ood_g_score
+            'ood_g_score': ood_g_score,
+            'i_theoretical': i_theoretical,
+            'g_theoretical': g_theoretical
         }
         
         print(f"Threshold: {threshold:.1f} | I-score: {i_score:.4f} | G-score: {g_score:.4f} | OOD G-score: {ood_g_score:.4f}")
+        print(f"Theoretical: I-score: {i_theoretical:.4f} | G-score: {g_theoretical:.4f}")
+    
+    # Final memory cleanup before plotting
+    free_memory()
     
     # Plot G-I tradeoff curve for different thresholds
-    plt.figure(figsize=(10, 8))
+    plt.figure(figsize=(12, 10))
     
     # Extract scores for plotting
     thresh_values = list(threshold_results.keys())
     i_scores_by_thresh = [threshold_results[t]['i_score'] for t in thresh_values]
     g_scores_by_thresh = [threshold_results[t]['g_score'] for t in thresh_values]
+    i_theo_by_thresh = [threshold_results[t]['i_theoretical'] for t in thresh_values]
+    g_theo_by_thresh = [threshold_results[t]['g_theoretical'] for t in thresh_values]
     
     # Create color gradient based on threshold
     cmap = plt.cm.viridis
     norm = plt.Normalize(min(thresh_values), max(thresh_values))
     colors = cmap(norm(thresh_values))
     
-    # Plot each point with its color from the gradient
+    # Plot empirical results
     for i in range(len(thresh_values)):
         if i > 0:
             plt.plot([g_scores_by_thresh[i-1], g_scores_by_thresh[i]], 
                      [i_scores_by_thresh[i-1], i_scores_by_thresh[i]], 
-                     '-', color=colors[i], linewidth=2.5)
+                     '-', color=colors[i], linewidth=2.5, alpha=0.7)
         plt.plot(g_scores_by_thresh[i], i_scores_by_thresh[i], 'o', 
                  color=colors[i], markersize=8, 
                  markeredgecolor='white', markeredgewidth=1)
     
+    # Plot theoretical curve
+    plt.plot(g_theo_by_thresh, i_theo_by_thresh, 'r--', linewidth=3, 
+             label="Theoretical (Miller's Law)", alpha=0.8)
+    
     plt.xlabel('Generalization (G)', fontsize=14, fontweight='bold')
     plt.ylabel('Identification (I)', fontsize=14, fontweight='bold')
-    plt.title(f'G-I Tradeoff at Different Thresholds (α={alpha})', 
+    plt.title(f'G-I Tradeoff: Empirical vs Theoretical (α={alpha})', 
               fontsize=16, fontweight='bold')
     plt.grid(True, linestyle='--', alpha=0.7)
+    plt.legend(loc='best', fontsize=12)
     
     # Annotate some points
-    annotation_indices = np.linspace(0, len(thresh_values)-1, 9, dtype=int)
+    annotation_indices = np.linspace(0, len(thresh_values)-1, 7, dtype=int)
     for i in annotation_indices:
         plt.annotate(f"ε={thresh_values[i]:.1f}", 
                    (g_scores_by_thresh[i], i_scores_by_thresh[i]),
@@ -1260,16 +1597,15 @@ def train_with_gi_tradeoff(alpha=0.5, epochs=10, batch_size=16, lr=0.001, random
     cbar.set_label('Threshold (ε)', fontsize=12, fontweight='bold')
     
     plt.tight_layout()
-    plt.savefig(os.path.join(results_dir, f'gi_threshold_tradeoff_alpha{alpha}.png'), dpi=300)
-    # plt.show()  # Comment out this line
+    plt.savefig(os.path.join(results_dir, f'gi_threshold_tradeoff_alpha{alpha}_with_theory.png'), dpi=300)
     plt.close()
     
     # Save threshold results to a CSV file
     with open(os.path.join(results_dir, f'threshold_results_alpha{alpha}.csv'), 'w') as f:
-        f.write('threshold,i_score,g_score,ood_g_score\n')
+        f.write('threshold,i_score,g_score,ood_g_score,i_theoretical,g_theoretical\n')
         for threshold in threshold_results:
             result = threshold_results[threshold]
-            f.write(f"{threshold},{result['i_score']},{result['g_score']},{result['ood_g_score']}\n")
+            f.write(f"{threshold},{result['i_score']},{result['g_score']},{result['ood_g_score']},{result['i_theoretical']},{result['g_theoretical']}\n")
     
     return {
         'model': model,
@@ -1282,82 +1618,163 @@ def train_with_gi_tradeoff(alpha=0.5, epochs=10, batch_size=16, lr=0.001, random
         'timestamp': timestamp  # Return timestamp for use in run_experiments
     }
 
-# 7. Run with different alpha values
-def run_experiments():
+# Modified run_experiments function to handle memory better
+def run_experiments(alpha_values=None, random_seeds=None):
     # Create single timestamp for all experiments
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    results_dir = f"results/models_{timestamp}"
+    results_dir = f"../results/models_{timestamp}"
     os.makedirs(results_dir, exist_ok=True)
     
-    # alphas = [0.0, 0.25, 0.5, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0] 
-    # alphas = [0.0, 0.25] 
-    # alphas = [0.5, 0.75]
-    # alphas = [0.8, 0.85]
-    alphas = [0.9, 0.95]
-    # alphas = [1.0]squeue 
+    # Analyze the space properties first
+    print("\n=== Analyzing Space Properties ===\n")
+    is_disc = is_discriminative(evo_distances)
+    print(f"Is the evolutionary distance space discriminative? {is_disc}")
+    
+    alpha_term = calculate_alpha_term(evo_distances)
+    print(f"Alpha term (equidistant sphere measure): {alpha_term}")
+    
+    # Calculate the theoretical max G-score
+    if is_disc:
+        g_max = 3/4
+        print(f"Space is discriminative, theoretical Gmax = {g_max}")
+    else:
+        # For non-discriminative spaces, calculate the max from Theorem 1
+        g_max = (1/2) * (1 + alpha_term) + 0.5 - 0.5**2
+        print(f"Space is not discriminative, calculated Gmax = {g_max:.4f}")
+    
+    # Use provided alpha values or default list
+    if alpha_values is None:
+        # Default alpha values to try - reduce number for memory savings
+        alphas = [0.0, 0.5, 1.0]  # Simplified set for memory constraints
+    else:
+        alphas = alpha_values
+    
+    # Use provided random seeds or default to a single seed
+    if random_seeds is None:
+        random_seeds = [42]
+    
+    print(f"Running experiments with alpha values: {alphas}")
+    print(f"Using {len(random_seeds)} random seeds: {random_seeds}")
+    
+    # Store results for each alpha and seed combination
     results = {}
     
     for alpha in alphas:
-        print(f"\n=== Training with alpha={alpha} ===\n")
-        result = train_with_gi_tradeoff(alpha=alpha, epochs=15, random_state=42)
-        results[alpha] = result
-    
-    # Plot all trajectories together
-    plt.figure(figsize=(10, 8))
-    
-    colors = plt.cm.viridis(np.linspace(0, 1, len(alphas)))
-    
-    for i, alpha in enumerate(alphas):
-        g_scores = results[alpha]['g_scores']
-        i_scores = results[alpha]['i_scores']
+        results[alpha] = []
         
-        plt.plot(g_scores, i_scores, 'o-', color=colors[i], 
-                 linewidth=2, label=f'α={alpha}')
+        for seed in random_seeds:
+            print(f"\n=== Training with alpha={alpha}, seed={seed} ===\n")
+            # Explicitly free memory before each new experiment
+            free_memory()
+            print_gpu_memory_usage(f"Before starting alpha={alpha}, seed={seed}")
+            
+            result = train_with_gi_tradeoff(alpha=alpha, epochs=15, random_state=seed, 
+                                            batch_size=8, gradient_accumulation_steps=4)
+            results[alpha].append(result)
+            
+            # Free memory after each complete experiment
+            free_memory()
+            print_gpu_memory_usage(f"After completing alpha={alpha}, seed={seed}")
+    
+    # Skip combined plots if only running a single alpha value
+    if len(alphas) > 1:
+        # Free memory before plotting
+        free_memory()
+        print_gpu_memory_usage("Before creating final plots")
         
-        plt.scatter(g_scores[0], i_scores[0], s=100, 
-                    facecolors='none', edgecolors=colors[i])
-        plt.scatter(g_scores[-1], i_scores[-1], s=100, 
-                    color=colors[i])
+        # Plot all trajectories together with theoretical curve
+        plt.figure(figsize=(12, 10))
+        
+        colors = plt.cm.viridis(np.linspace(0, 1, len(alphas)))
+        
+        # First plot the theoretical curve
+        thresholds = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150]
+        g_theo = []
+        i_theo = []
+        
+        for threshold in thresholds:
+            g_theo.append(theoretical_G_score(threshold, evo_distances))
+            i_theo.append(theoretical_I_score(threshold, evo_distances))
+        
+        plt.plot(g_theo, i_theo, 'r--', linewidth=3, 
+                 label="Theoretical (Miller's Law)", alpha=0.8)
+        
+        # Then plot empirical trajectories for each alpha and seed
+        for i, alpha in enumerate(alphas):
+            for j, seed_results in enumerate(results[alpha]):
+                g_scores = seed_results['g_scores']
+                i_scores = seed_results['i_scores']
+                
+                # Use different line styles for different seeds
+                linestyle = ['-', '--', '-.', ':', '-'][j]
+                
+                plt.plot(g_scores, i_scores, 'o'+linestyle, color=colors[i], 
+                         linewidth=1.5, alpha=0.7, label=f'α={alpha}, seed={random_seeds[j]}' if j == 0 else "")
+                
+                plt.scatter(g_scores[0], i_scores[0], s=50, 
+                            facecolors='none', edgecolors=colors[i], alpha=0.7)
+                plt.scatter(g_scores[-1], i_scores[-1], s=50, 
+                            color=colors[i], alpha=0.7)
+        
+        plt.xlabel('Generalization (G)', fontsize=14, fontweight='bold')
+        plt.ylabel('Identification (I)', fontsize=14, fontweight='bold')
+        plt.title('G-I Training Trajectories with Different α Values and Seeds', 
+                  fontsize=16, fontweight='bold')
+        plt.grid(True, linestyle='--', alpha=0.7)
+        plt.legend(fontsize=12)
+        plt.tight_layout()
+        plt.savefig(os.path.join(results_dir, 'gi_all_trajectories_with_theory.png'), dpi=300)
+        plt.close()
+        
+        # Plot OOD performance
+        plt.figure(figsize=(12, 6))
+        
+        plt.subplot(1, 2, 1)
+        for i, alpha in enumerate(alphas):
+            for j, seed_results in enumerate(results[alpha]):
+                # Use different line styles for different seeds
+                linestyle = ['-', '--', '-.', ':', '-'][j]
+                plt.plot(seed_results['g_scores'], linestyle, color=colors[i], alpha=0.7, 
+                         label=f'α={alpha}, seed={random_seeds[j]}' if j == 0 else "")
+        plt.xlabel('Epoch')
+        plt.ylabel('In-distribution G-score')
+        plt.title('In-distribution Generalization')
+        plt.legend()
+        
+        plt.subplot(1, 2, 2)
+        for i, alpha in enumerate(alphas):
+            for j, seed_results in enumerate(results[alpha]):
+                # Use different line styles for different seeds
+                linestyle = ['-', '--', '-.', ':', '-'][j]
+                plt.plot(seed_results['ood_g_scores'], linestyle, color=colors[i], alpha=0.7,
+                         label=f'α={alpha}, seed={random_seeds[j]}' if j == 0 else "")
+        plt.xlabel('Epoch')
+        plt.ylabel('OOD G-score')
+        plt.title('Out-of-distribution Generalization')
+        plt.legend()
+        
+        plt.tight_layout()
+        plt.savefig(os.path.join(results_dir, 'ood_performance.png'), dpi=300)
+        plt.close()
     
-    plt.xlabel('Generalization (G)', fontsize=14, fontweight='bold')
-    plt.ylabel('Identification (I)', fontsize=14, fontweight='bold')
-    plt.title('G-I Training Trajectories with Different α Values', 
-              fontsize=16, fontweight='bold')
-    plt.grid(True, linestyle='--', alpha=0.7)
-    plt.legend(fontsize=12)
-    plt.tight_layout()
-    plt.savefig(os.path.join(results_dir, 'gi_all_trajectories.png'), dpi=300)
-    # plt.show()  # Comment out this line
-    plt.close()
-    
-    # Plot OOD performance
-    plt.figure(figsize=(12, 6))
-    
-    plt.subplot(1, 2, 1)
-    for i, alpha in enumerate(alphas):
-        plt.plot(results[alpha]['g_scores'], label=f'α={alpha}')
-    plt.xlabel('Epoch')
-    plt.ylabel('In-distribution G-score')
-    plt.title('In-distribution Generalization')
-    plt.legend()
-    
-    plt.subplot(1, 2, 2)
-    for i, alpha in enumerate(alphas):
-        plt.plot(results[alpha]['ood_g_scores'], label=f'α={alpha}')
-    plt.xlabel('Epoch')
-    plt.ylabel('OOD G-score')
-    plt.title('Out-of-distribution Generalization')
-    plt.legend()
-    
-    plt.tight_layout()
-    plt.savefig(os.path.join(results_dir, 'ood_performance.png'), dpi=300)
-    # plt.show()  # Comment out this line
-    plt.close()
+    # Final memory cleanup
+    free_memory()
+    print_gpu_memory_usage("End of experiments")
     
     return results
 
-# 8. Execute the experiment
+# Modify main execution block
 if __name__ == "__main__":
+    # Add command line argument parsing
+    parser = argparse.ArgumentParser(description='Run bird species generalization experiments')
+    parser.add_argument('--alpha', type=float, nargs='+', help='Alpha value(s) to train with (e.g., 0.5 0.75)')
+    parser.add_argument('--batch-size', type=int, default=8, help='Training batch size')
+    parser.add_argument('--grad-accum', type=int, default=4, help='Gradient accumulation steps')
+    parser.add_argument('--epochs', type=int, default=15, help='Number of training epochs')
+    parser.add_argument('--num-seeds', type=int, default=5, help='Number of random seeds to use (default: 5)')
+    parser.add_argument('--seeds', type=int, nargs='+', help='Specific random seeds to use (overrides num-seeds)')
+    args = parser.parse_args()
+    
     # Set random seeds for reproducibility
     np.random.seed(42)
     torch.manual_seed(42)
@@ -1367,13 +1784,61 @@ if __name__ == "__main__":
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
     
+    # Update training function parameters
+    train_with_gi_tradeoff.__defaults__ = (0.5, args.epochs, args.batch_size, 0.001, 42, args.grad_accum)
+    
+    # If specific seeds are provided, use those
+    if args.seeds:
+        random_seeds = args.seeds
+    else:
+        # Otherwise generate the specified number of seeds
+        random_seeds = list(range(42, 42 + args.num_seeds))
+    
+    # Override the seeds in run_experiments
+    run_experiments.__defaults__ = (None,)
+    
+    # Log the experiment configuration
+    print(f"Starting experiment with:")
+    print(f"  Alpha values: {args.alpha}")
+    print(f"  Batch size: {args.batch_size}")
+    print(f"  Gradient accumulation steps: {args.grad_accum}")
+    print(f"  Epochs: {args.epochs}")
+    print(f"  Random seeds: {random_seeds}")
+    
+    # Monkey patch the run_experiments function to use our seeds
+    original_run_experiments = run_experiments
+    def patched_run_experiments(alpha_values=None):
+        # Use seeds from outer scope
+        # Create a temporary version of run_experiments that uses our seeds
+        old_body = original_run_experiments.__code__
+        from types import FunctionType
+        new_func = FunctionType(old_body, original_run_experiments.__globals__, 
+                              original_run_experiments.__name__, 
+                              original_run_experiments.__defaults__,
+                              original_run_experiments.__closure__)
+        # Call with our random seeds
+        return new_func(alpha_values, random_seeds)
+    
+    # Replace run_experiments with our patched version
+    run_experiments = patched_run_experiments
+    
     try:
-        results = run_experiments()
+        # Ensure clean memory state at start
+        free_memory()
+        print_gpu_memory_usage("Before starting experiments")
+        
+        # Run with specified alpha values if provided
+        if args.alpha:
+            results = run_experiments(alpha_values=args.alpha)
+        else:
+            # Default behavior - run all alpha values
+            results = run_experiments()
+            
         # Clean up GPU memory after we're done
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
+        free_memory()
+        print_gpu_memory_usage("Final state")
     except Exception as e:
         print(f"Error during execution: {e}")
         # Make sure to clean up GPU memory even if there's an error
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
+        free_memory()
+        print_gpu_memory_usage("Error state")
