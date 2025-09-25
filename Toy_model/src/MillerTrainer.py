@@ -86,12 +86,27 @@ class MillerTrainer:
             ## Calculate losses for both tasks
             flag = 0
             if "similarity" in self.config.losses:
-                if isinstance(self.model.activation, torch.nn.ReLU):
-                    sim_outputs = self.model.activation(torch.bmm(embs[:,:-1,:],embs[:,[-1],:].permute((0,2,1)) )) + 10**-10
+                if getattr(self.model, 'is_compositional', False):
+                    slot_embs = self.model.get_slot_embeddings(sim_inputs)
+                    per_slot_logits = []
+                    for s in range(slot_embs.shape[2]):
+                        ctx = slot_embs[:, :-1, s, :]
+                        probe = slot_embs[:, [-1], s, :]
+                        logits_s = torch.bmm(ctx, probe.permute(0, 2, 1))  # [B, K-1, 1]
+                        per_slot_logits.append(logits_s)
+                    sim_outputs = torch.max(torch.cat(per_slot_logits, dim=2), dim=2).values  # [B, K-1]
+                    if isinstance(self.model.activation, torch.nn.ReLU):
+                        sim_outputs = self.model.activation(sim_outputs) + 10**-10
+                    else:
+                        sim_outputs = self.model.activation(sim_outputs)
                 else:
-                    sim_outputs = self.model.activation(torch.bmm(embs[:,:-1,:],embs[:,[-1],:].permute((0,2,1)) ))# + 10**-10
-                sim_outputs = sim_outputs.squeeze(2)
-                sim_probs = sim_outputs/torch.sum(sim_outputs, 1, keepdims = True)            
+                    if isinstance(self.model.activation, torch.nn.ReLU):
+                        sim_outputs = self.model.activation(torch.bmm(embs[:,:-1,:],embs[:,[-1],:].permute((0,2,1)) )) + 10**-10
+                    else:
+                        sim_outputs = self.model.activation(torch.bmm(embs[:,:-1,:],embs[:,[-1],:].permute((0,2,1)) ))# + 10**-10
+                    sim_outputs = sim_outputs.squeeze(2)
+                # Normalize by ratio (match evaluator): logits / sum(logits)
+                sim_probs = sim_outputs/torch.sum(sim_outputs, 1, keepdims = True)
                 # Similarity loss
                 sim_loss = loss_fn(torch.log(sim_probs), sim_labels.to(self.config.device))
                 combined_loss = self.config.lambda_sim*sim_loss
@@ -165,7 +180,12 @@ class MillerTrainer:
             self.train_history['reconstruction_losses'].append(train_metrics['reconstruction_loss'])
             self.train_history['confusion_matrix_sim'].append(val_metrics['confusion_matrix_sim'])
             if compute_embeddings:
-                x, __ = self.model(torch.eye(self.config.num_inputs).to("cuda").unsqueeze(0))
+                device = self.config.device
+                num_inputs = getattr(self.data_generator.config, 'num_inputs', None)
+                if num_inputs is None:
+                    # Fallback: try to infer from model input dimension
+                    num_inputs = getattr(self.config, 'num_inputs', None)
+                x, __ = self.model(torch.eye(num_inputs).to(device).unsqueeze(0))
                 x = x[0,:,:].detach().cpu().numpy()
                 embs.append(x)
             

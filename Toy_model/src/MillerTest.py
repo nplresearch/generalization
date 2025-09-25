@@ -37,8 +37,14 @@ class MillerTestEvaluator:
             # Similarity test
             correct_sim = 0
             total_sim = 0
-            confusion_matrix_sim = torch.zeros(self.config.num_inputs, self.config.num_inputs)
-            number_appear_sim = torch.zeros(self.config.num_inputs, self.config.num_inputs)
+            is_comp = getattr(model, 'is_compositional', False)
+            if not is_comp:
+                confusion_matrix_sim = torch.zeros(self.config.num_inputs, self.config.num_inputs)
+                number_appear_sim = torch.zeros(self.config.num_inputs, self.config.num_inputs)
+            else:
+                # Placeholder small matrices when in compositional mode (not used downstream)
+                confusion_matrix_sim = torch.zeros(1, 1)
+                number_appear_sim = torch.zeros(1, 1)
 
             # Loop over batches for similarity test
             for _ in range(self.config.num_samples // self.config.batch_size):
@@ -49,27 +55,45 @@ class MillerTestEvaluator:
                 inputs_ids = inputs_ids.cpu()
                 labels = labels.cpu()
                 # Compute similarity outputs
-                if isinstance(model.activation, torch.nn.ReLU):
-                    outputs = model.activation(torch.bmm(embs[:, :-1, :], embs[:, [-1], :].permute((0, 2, 1)))) + 10**-10
+                if getattr(model, 'is_compositional', False):
+                    slot_embs = model.get_slot_embeddings(inputs)
+                    # slot_embs: [B, K, S, F]
+                    # per-slot logits: [B, K-1] for each slot, then max over slots
+                    per_slot_logits = []
+                    for s in range(slot_embs.shape[2]):
+                        ctx = slot_embs[:, :-1, s, :]
+                        probe = slot_embs[:, [-1], s, :]
+                        logits_s = torch.bmm(ctx, probe.permute(0, 2, 1))  # [B, K-1, 1]
+                        per_slot_logits.append(logits_s)
+                    outputs = torch.max(torch.cat(per_slot_logits, dim=2), dim=2).values  # [B, K-1]
+                    if isinstance(model.activation, torch.nn.ReLU):
+                        outputs = model.activation(outputs) + 10**-10
+                    else:
+                        outputs = model.activation(outputs)
                 else:
-                    outputs = model.activation(torch.bmm(embs[:, :-1, :], embs[:, [-1], :].permute((0, 2, 1))))
-                outputs = outputs.squeeze(2)
+                    if isinstance(model.activation, torch.nn.ReLU):
+                        outputs = model.activation(torch.bmm(embs[:, :-1, :], embs[:, [-1], :].permute((0, 2, 1)))) + 10**-10
+                    else:
+                        outputs = model.activation(torch.bmm(embs[:, :-1, :], embs[:, [-1], :].permute((0, 2, 1))))
+                    outputs = outputs.squeeze(2)
             
                 # Normalize predictions to probabilities
                 pred = outputs.float().cpu()
                 pred = pred / torch.sum(pred, 1, keepdims=True)
 
                 # Update confusion matrices
-                for b in range(self.config.batch_size):
-                    confusion_matrix_sim[inputs_ids[b, labels[b]], inputs_ids[b, :-1]] += pred[b, :]
-                    number_appear_sim[inputs_ids[b, labels[b]], inputs_ids[b, :-1]] += 1
+                if not is_comp:
+                    for b in range(self.config.batch_size):
+                        confusion_matrix_sim[inputs_ids[b, labels[b]], inputs_ids[b, :-1]] += pred[b, :]
+                        number_appear_sim[inputs_ids[b, labels[b]], inputs_ids[b, :-1]] += 1
 
                 # Count correct predictions
                 correct_sim += (pred.gather(1, labels.unsqueeze(1))).sum().item()
                 total_sim += labels.size(0)
             
             # Normalize confusion matrix
-            confusion_matrix_sim[number_appear_sim > 0] /= number_appear_sim[number_appear_sim > 0]
+            if not is_comp:
+                confusion_matrix_sim[number_appear_sim > 0] /= number_appear_sim[number_appear_sim > 0]
 
             # Identification test
             correct_id = 0
@@ -82,11 +106,25 @@ class MillerTestEvaluator:
                 embs, __ = model(inputs)
 
                 # Compute identification outputs
-                if isinstance(model.activation, torch.nn.ReLU):
-                    outputs = model.activation(torch.bmm(embs[:, :-1, :], embs[:, [-1], :].permute((0, 2, 1)))) + 10**-10
+                if getattr(model, 'is_compositional', False):
+                    slot_embs = model.get_slot_embeddings(inputs)
+                    per_slot_logits = []
+                    for s in range(slot_embs.shape[2]):
+                        ctx = slot_embs[:, :-1, s, :]
+                        probe = slot_embs[:, [-1], s, :]
+                        logits_s = torch.bmm(ctx, probe.permute(0, 2, 1))  # [B, K-1, 1]
+                        per_slot_logits.append(logits_s)
+                    outputs = torch.max(torch.cat(per_slot_logits, dim=2), dim=2).values  # [B, K-1]
+                    if isinstance(model.activation, torch.nn.ReLU):
+                        outputs = model.activation(outputs) + 10**-10
+                    else:
+                        outputs = model.activation(outputs)
                 else:
-                    outputs = model.activation(torch.bmm(embs[:, :-1, :], embs[:, [-1], :].permute((0, 2, 1))))
-                outputs = outputs.squeeze(2)
+                    if isinstance(model.activation, torch.nn.ReLU):
+                        outputs = model.activation(torch.bmm(embs[:, :-1, :], embs[:, [-1], :].permute((0, 2, 1)))) + 10**-10
+                    else:
+                        outputs = model.activation(torch.bmm(embs[:, :-1, :], embs[:, [-1], :].permute((0, 2, 1))))
+                    outputs = outputs.squeeze(2)
                
                 # Normalize predictions to probabilities
                 pred = outputs.float().cpu()
@@ -111,6 +149,7 @@ class TransformerModel(nn.Module):
         # Embedding layer: projects input to feature dimension
         self.embed = nn.Linear(config.input_dim, config.feature_dim, bias=False)
         self.activation = config.activation
+        self.is_compositional: bool = False
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # x shape: (batch_size, seq_len, feature_dim)
@@ -119,6 +158,92 @@ class TransformerModel(nn.Module):
         recon = self.activation(torch.matmul(x, self.embed.weight))
         return x, recon
 
+    def get_slot_embeddings(self, x: torch.Tensor):
+        """Non-compositional model has no slot embeddings."""
+        return None
+
 def create_model(config: MillerTestConfig) -> TransformerModel:
     """Factory function to create a TransformerModel"""
     return TransformerModel(config)
+
+
+# ========================= Compositional extension ========================= #
+
+@dataclass
+class CompositionalModelConfig:
+    input_dim: int  # sum of vocab sizes
+    feature_dim: int
+    sequence_len: int
+    vocab_sizes: Tuple[int, ...]
+    activation: nn.Module = nn.ReLU()
+    device: str = "cuda" if torch.cuda.is_available() else "cpu"
+
+class CompositionalModel(nn.Module):
+    """
+    Slot-wise linear embeddings. Input is concatenated multi-hot over slots.
+    Similarity for decisions is computed as the max over per-slot similarities between candidate and probe.
+    """
+    def __init__(self, config: CompositionalModelConfig):
+        super().__init__()
+        self.config = config
+        self.activation = config.activation
+        self.vocab_sizes = list(config.vocab_sizes)
+        self.num_slots = len(self.vocab_sizes)
+        self.feature_dim = config.feature_dim
+        self.is_compositional: bool = True
+
+        # Per-slot linear projections (no bias)
+        self.slot_embedders = nn.ModuleList([
+            nn.Linear(v_size, config.feature_dim, bias=False) for v_size in self.vocab_sizes
+        ])
+
+        # Precompute slot offsets to slice inputs
+        self.register_buffer(
+            'slot_offsets',
+            torch.tensor([0] + list(np.cumsum(self.vocab_sizes)[:-1]), dtype=torch.long),
+            persistent=False
+        )
+
+    def _split_slots(self, x: torch.Tensor) -> List[torch.Tensor]:
+        # x: [B, K, sum(V)] -> list of [B, K, V_k]
+        parts: List[torch.Tensor] = []
+        start = 0
+        for v in self.vocab_sizes:
+            parts.append(x[:, :, start:start+v])
+            start += v
+        return parts
+
+    def get_slot_embeddings(self, x: torch.Tensor) -> torch.Tensor:
+        # Returns [B, K, S, F]
+        parts = self._split_slots(x)
+        slot_embs = []
+        for k, part in enumerate(parts):
+            # [B*K, V_k] @ [V_k, F] -> [B*K, F]
+            B, K, V = part.shape
+            part2d = part.reshape(B*K, V)
+            emb2d = part2d @ self.slot_embedders[k].weight.t()
+            emb = emb2d.reshape(B, K, self.feature_dim)
+            slot_embs.append(emb.unsqueeze(2))
+        return torch.cat(slot_embs, dim=2)
+
+    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+        # Compute per-slot embeddings and sum for combined embedding
+        slot_embs = self.get_slot_embeddings(x)  # [B, K, S, F]
+        embs = slot_embs.sum(dim=2)  # [B, K, F]
+        # Reconstruction per slot, then concat
+        recons = []
+        parts = self._split_slots(x)
+        for k in range(self.num_slots):
+            emb_k = slot_embs[:, :, k, :]  # [B, K, F]
+            # [B*K, F] @ [F, V_k] -> [B*K, V_k]
+            B, K, F = emb_k.shape
+            recon2d = emb_k.reshape(B*K, F) @ self.slot_embedders[k].weight
+            recon_k = recon2d.reshape(B, K, self.vocab_sizes[k])
+            recon_k = self.activation(recon_k)
+            recons.append(recon_k)
+        recon = torch.cat(recons, dim=2)  # [B, K, sum(V)]
+        return embs, recon
+
+
+def create_compositional_model(config: CompositionalModelConfig) -> CompositionalModel:
+    return CompositionalModel(config)
