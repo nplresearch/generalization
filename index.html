@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bound by Semanticity | Universal Laws of Generalization</title>
+    
+    <meta name="description" content="We expose fundamental limits on how intelligent systems balance generalization and identification. Our theory predicts exact Pareto fronts governing representational capacity.">
+    <meta name="keywords" content="machine learning, generalization, neural networks, semantic resolution, information theory, deep learning">
+    <meta name="author" content="Marco Nurisso, Jesseba Fernando, Raj Deshpande, et al.">
+    
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Bound by Semanticity: Universal Laws of Generalization">
+    <meta property="og:description" content="A fundamental theory of the generalization-identification tradeoff in intelligent systems.">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    
+    <style>
+        :root {
+            /* Color palette - Refined Academic */
+            --bg-primary: #faf9f7;
+            --bg-secondary: #f5f3f0;
+            --bg-card: #ffffff;
+            --text-primary: #1a1a1a;
+            --text-secondary: #4a4a4a;
+            --text-muted: #737373;
+            --accent: #c45a3b;
+            --accent-light: #e8d5cf;
+            --accent-dark: #9a3f27;
+            --border: #e5e3df;
+            --border-light: #f0eeea;
+            
+            /* Typography */
+            --font-display: 'Cormorant Garamond', Georgia, serif;
+            --font-body: 'Source Sans 3', -apple-system, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            
+            /* Spacing */
+            --section-padding: clamp(4rem, 8vw, 8rem);
+            --container-width: min(1100px, 90vw);
+            --content-width: min(800px, 90vw);
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        html { scroll-behavior: smooth; font-size: 16px; }
+        
+        body {
+            font-family: var(--font-body);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.7;
+            font-weight: 400;
+        }
+        
+        /* Noise texture overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            z-index: 1000;
+        }
+        
+        /* Layout classes */
+        .hero {
+            min-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: var(--section-padding) 1.5rem;
+            text-align: center;
+        }
+        
+        .paper-title {
+            font-family: var(--font-display);
+            font-size: clamp(2.5rem, 6vw, 4.5rem);
+            font-weight: 600;
+            line-height: 1.1;
+            margin-bottom: 1rem;
+        }
+        
+        .paper-subtitle {
+            font-family: var(--font-display);
+            font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+            font-style: italic;
+            color: var(--text-secondary);
+            margin-bottom: 3rem;
+        }
+
+        .authors { margin-bottom: 2rem; color: var(--text-secondary); }
+        .affiliations { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 3rem; }
+        
+        .btn {
+            display: inline-flex; align-items: center; gap: 0.5rem;
+            padding: 0.75rem 1.5rem; border-radius: 6px;
+            text-decoration: none; font-weight: 500; transition: all 0.2s;
+        }
+        .btn-primary { background: var(--text-primary); color: white; }
+        .btn-secondary { background: white; border: 1px solid var(--border); color: var(--text-primary); }
+        
+        section { padding: var(--section-padding) 1.5rem; }
+        .section-inner { max-width: var(--content-width); margin: 0 auto; }
+        .section-title {
+            font-family: var(--font-display);
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid var(--accent);
+            display: inline-block;
+        }
+        
+        /* Viz Styling */
+        .viz-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-top: 2rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+        }
+        
+        .viz-header { display: flex; justify-content: space-between; gap: 2rem; margin-bottom: 2rem; flex-wrap: wrap; }
+        .viz-title { font-family: var(--font-display); font-size: 1.5rem; margin-bottom: 0.5rem; }
+        
+        .viz-chart { width: 100%; height: auto; display: flex; justify-content: center; }
+        .viz-chart svg { max-width: 100%; overflow: visible; }
+        
+        .metrics-row {
+            display: flex; gap: 1rem; margin-top: 1.5rem; flex-wrap: wrap;
+            justify-content: center;
+        }
+        .metric {
+            background: var(--bg-secondary); padding: 1rem; border-radius: 8px;
+            text-align: center; min-width: 120px;
+        }
+        .metric-value { font-family: var(--font-mono); font-size: 1.25rem; color: var(--accent); font-weight: 600; }
+        .metric-label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;}
+
+        .viz-legend {
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 1.5rem;
+            margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-light);
+            font-size: 0.85rem; color: var(--text-secondary);
+        }
+        .legend-item { display: flex; align-items: center; gap: 0.5rem; }
+        
+        .slider-container { margin-bottom: 1rem; }
+        .slider-label { display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.9rem; }
+        input[type=range] { width: 100%; accent-color: var(--accent); }
+
+        .toy-model-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;
+        }
+        @media (max-width: 768px) { .toy-model-grid { grid-template-columns: 1fr; } }
+        
+        .highlight-math { color: var(--accent); font-family: var(--font-mono); }
+    </style>
+</head>
+<body>
+
+    <section class="hero">
+        <div class="conference-badge" style="margin-bottom: 1rem; font-family: var(--font-mono); font-size: 0.9rem; color: var(--accent);">
+            arXiv:2506.14797
+        </div>
+        <h1 class="paper-title">Bound by <em>Semanticity</em></h1>
+        <p class="paper-subtitle">Universal Laws of Generalization</p>
+        
+        <div class="authors">
+            Nurisso, M., Fernando, J., Deshpande, R., et al.
+        </div>
+        
+        <div class="actions" style="display: flex; gap: 1rem;">
+            <a href="https://arxiv.org/abs/2506.14797" class="btn btn-primary">Read Paper</a>
+            <a href="#interactive" class="btn btn-secondary">Interactive Demo</a>
+        </div>
+    </section>
+
+    <section class="section-inner">
+        <h2 class="section-title">Abstract</h2>
+        <p style="font-size: 1.1rem; text-align: justify;">
+            Intelligent systems must deploy internal representations that are simultaneously structured—to support broad generalization—and selective—to preserve input identity. We expose a fundamental limit on this tradeoff. For any model whose representational similarity between inputs decays with finite semantic resolution, we derive closed-form expressions that pin its probability of correct generalization $p_S$ and identification $p_I$ to a <strong>universal Pareto front</strong>. A minimal ReLU network trained end-to-end reproduces these laws: during learning a resolution boundary self-organizes and empirical trajectories closely follow theoretical curves for linearly decaying similarity.
+        </p>
+    </section>
+
+    <section id="interactive" class="interactive-section">
+        <div class="section-inner">
+            <h2 class="section-title">Interactive Visualizations</h2>
+            
+            <div class="viz-container">
+                <div class="viz-header">
+                    <div style="flex: 1;">
+                        <h3 class="viz-title">The Generalization-Identification Front</h3>
+                        <p class="viz-subtitle">Comparing Theoretical (Theorem 1) vs. Empirical (Proposition 1) Bounds</p>
+                    </div>
+                    <div class="viz-controls" style="min-width: 300px;">
+                        <div class="slider-container">
+                            <div class="slider-label">
+                                <span>Resolution $\varepsilon$ (Semantics)</span>
+                                <span class="highlight-math" id="epsilon-val">0.25</span>
+                            </div>
+                            <input type="range" id="epsilon-slider" min="0.01" max="1.0" step="0.01" value="0.25">
+                        </div>
+                        <div class="slider-container">
+                            <div class="slider-label">
+                                <span>Noise $\Delta$ (Theorem 2)</span>
+                                <span class="highlight-math" id="noise-val">0.0</span>
+                            </div>
+                            <input type="range" id="noise-slider" min="0" max="0.8" step="0.1" value="0">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="viz-chart" id="pareto-chart"></div>
+
+                <div class="metrics-row">
+                    <div class="metric">
+                        <div class="metric-label">Generalization ($p_S$)</div>
+                        <div class="metric-value" id="metric-ps">0.00</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Identification ($p_I$)</div>
+                        <div class="metric-value" id="metric-pi">0.00</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Capacity ($p_S \times p_I$)</div>
+                        <div class="metric-value" id="metric-cap">0.00</div>
+                    </div>
+                </div>
+
+                <div class="viz-legend">
+                    <div class="legend-item">
+                        <span style="width: 20px; height: 3px; background: #1a1a1a;"></span>
+                        <span><strong>Prop 1:</strong> Linear Decay (Real NN)</span>
+                    </div>
+                    <div class="legend-item">
+                        <span style="width: 20px; height: 3px; border-top: 2px dashed #888;"></span>
+                        <span><strong>Thm 1:</strong> Constant (Absolute Bound)</span>
+                    </div>
+                    <div class="legend-item">
+                        <span style="width: 12px; height: 12px; background: rgba(196, 90, 59, 0.2);"></span>
+                        <span>Forbidden Region</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="viz-container">
+                <div class="viz-header">
+                    <div>
+                        <h3 class="viz-title">Toy Model Learning Dynamics</h3>
+                        <p class="viz-subtitle">Replicating Figure 4: Self-organizing resolution on the Flat Circle</p>
+                    </div>
+                    <div>
+                        <button class="btn btn-primary" onclick="startLearning()">
+                            <i class="fas fa-play"></i> Train Network
+                        </button>
+                        <button class="btn btn-secondary" onclick="resetLearning()">
+                            <i class="fas fa-redo"></i> Reset
+                        </button>
+                    </div>
+                </div>
+
+                <div class="toy-model-grid">
+                    <div>
+                        <h4 style="font-size: 0.9rem; text-align: center; margin-bottom: 1rem;">Learned Similarity $g(x, \cdot)$ on Input Space</h4>
+                        <div class="viz-chart" id="circle-chart"></div>
+                        <p style="font-size: 0.8rem; color: #737373; text-align: center; margin-top: 0.5rem;">
+                            Visualizing the receptive field of a single neuron as $\varepsilon$ sharpens.
+                        </p>
+                    </div>
+                    <div>
+                        <h4 style="font-size: 0.9rem; text-align: center; margin-bottom: 1rem;">Training Trajectory $(p_S, p_I)$</h4>
+                        <div class="viz-chart" id="trajectory-chart"></div>
+                    </div>
+                </div>
+
+                <div class="metrics-row">
+                    <div class="metric">
+                        <div class="metric-label">Epoch</div>
+                        <div class="metric-value" id="learn-epoch">0</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Current $\varepsilon$</div>
+                        <div class="metric-value" id="learn-epsilon">0.50</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            initPareto();
+            initToyModel();
+            
+            // Render Math
+            renderMathInElement(document.body, {
+                delimiters: [
+                    {left: "$$", right: "$$", display: true},
+                    {left: "$", right: "$", display: false}
+                ]
+            });
+        });
+
+        const COLORS = {
+            black: "#1a1a1a",
+            grey: "#888888",
+            accent: "#c45a3b",
+            accentLight: "rgba(196, 90, 59, 0.15)",
+            forbidden: "rgba(196, 90, 59, 0.05)",
+            blue: "#2563eb",
+            highlight: "#fbbf24"
+        };
+
+        // --- PARETO FRONT VIZ ---
+        let updateParetoViz; // global reference
+
+        function initPareto() {
+            const margin = {top: 20, right: 30, bottom: 40, left: 50};
+            const width = 600 - margin.left - margin.right;
+            const height = 400 - margin.top - margin.bottom;
+
+            const svg = d3.select("#pareto-chart")
+                .append("svg")
+                .attr("viewBox", `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`)
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            // Scales (AXES FLIPPED AS REQUESTED)
+            // X-Axis = Generalization (p_S)
+            // Y-Axis = Identification (p_I)
+            const x = d3.scaleLinear().domain([0.5, 1.0]).range([0, width]);
+            const y = d3.scaleLinear().domain([0.5, 1.0]).range([height, 0]);
+
+            // Axes
+            svg.append("g").attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(x).ticks(5))
+                .append("text").attr("fill", "black").attr("x", width/2).attr("y", 35).text("Generalization Probability (p_S)");
+            
+            svg.append("g").call(d3.axisLeft(y).ticks(5))
+                .append("text").attr("fill", "black").attr("transform", "rotate(-90)").attr("y", -35).attr("x", -height/2).text("Identification Probability (p_I)");
+
+            // Generators: Note the swap: x maps to d.ps, y maps to d.pi
+            const lineGenerator = d3.line().x(d => x(d.ps)).y(d => y(d.pi)).curve(d3.curveBasis);
+            
+            // Paths
+            const forbiddenPath = svg.append("path").attr("fill", COLORS.forbidden);
+            const constantPath = svg.append("path").attr("fill", "none").attr("stroke", COLORS.grey).attr("stroke-dasharray", "5,5").attr("stroke-width", 2);
+            const linearPath = svg.append("path").attr("fill", "none").attr("stroke", COLORS.black).attr("stroke-width", 3);
+            const dot = svg.append("circle").attr("r", 8).attr("fill", COLORS.blue).attr("stroke", "white").attr("stroke-width", 2);
+
+            // Logic
+            function calculateCurves(noise) {
+                const constantData = [];
+                const linearData = [];
+                
+                // b ranges from 0 to 1. On circle b = 2*epsilon.
+                // We calculate the full curve regardless of the slider to draw the line
+                for(let b = 0.0; b <= 1.0; b += 0.01) {
+                    // Theorem 1 (Constant Similarity) - The Absolute Bound
+                    const term = (1 - noise) / (1 + noise);
+                    const pi_const = (2 - (1 - noise) * b) / (2 + 2 * noise);
+                    const ps_const = 0.5 + term * (b - b*b);
+                    
+                    if(pi_const >= 0.5 && ps_const >= 0.5) constantData.push({pi: pi_const, ps: ps_const});
+
+                    // Proposition 1 (Linear Decay) - The Empirical Bound
+                    const LOG2 = Math.log(2);
+                    const pi_lin_base = 1 - (1 - LOG2) * b;
+                    const ps_lin_base = 0.5 + b - (1.5 - LOG2) * b * b;
+                    
+                    // Apply noise degradation
+                    const pi_lin = (pi_lin_base * (1-noise)) + (0.5 * noise); 
+                    const ps_lin = (ps_lin_base * (1-noise)) + (0.5 * noise);
+
+                    if(pi_lin >= 0.5 && ps_lin >= 0.5) linearData.push({pi: pi_lin, ps: ps_lin, b: b});
+                }
+                return {constantData, linearData};
+            }
+
+            updateParetoViz = function() {
+                const eps = parseFloat(document.getElementById('epsilon-slider').value);
+                const noise = parseFloat(document.getElementById('noise-slider').value);
+                
+                document.getElementById('epsilon-val').innerText = eps.toFixed(2);
+                document.getElementById('noise-val').innerText = noise.toFixed(1);
+
+                const {constantData, linearData} = calculateCurves(noise);
+
+                // Draw Constant Curve (Thm 1)
+                constantPath.attr("d", lineGenerator(constantData));
+
+                // Draw Forbidden Region (Above Constant Curve)
+                // With axes flipped: Curve points -> Top Right (1,1) -> Top Left (0.5, 1) doesn't work directly
+                // We need to trace from the curve up to y=1
+                // The curve goes from low pS/high pI to high pS/low pI.
+                // We create a polygon that goes along the curve, then up to the top boundary.
+                const areaPath = lineGenerator(constantData) + `L${x(constantData[constantData.length-1].ps)},0 L${width},0 Z`;
+                forbiddenPath.attr("d", areaPath);
+
+                // Draw Linear Curve (Prop 1)
+                linearPath.attr("d", lineGenerator(linearData));
+
+                // Position Dot based on epsilon
+                // b(epsilon) = 2 * epsilon for circle, capped at 1.0 (full circle)
+                const b_target = Math.min(1.0, 2 * eps);
+                
+                // Find closest point in linear data
+                const point = linearData.find(d => Math.abs(d.b - b_target) < 0.015) || linearData[Math.floor(linearData.length/2)];
+                
+                // Note: dot position uses swapped axis logic: cx = ps, cy = pi
+                dot.attr("cx", x(point.ps)).attr("cy", y(point.pi));
+
+                // Update Metrics
+                document.getElementById('metric-ps').innerText = point.ps.toFixed(3);
+                document.getElementById('metric-pi').innerText = point.pi.toFixed(3);
+                document.getElementById('metric-cap').innerText = (point.ps * point.pi).toFixed(3);
+            }
+
+            // Listeners
+            document.getElementById('epsilon-slider').addEventListener('input', updateParetoViz);
+            document.getElementById('noise-slider').addEventListener('input', updateParetoViz);
+            
+            updateParetoViz();
+        }
+
+
+        // --- TOY MODEL VIZ ---
+        let toyInterval;
+        
+        function initToyModel() {
+            // Setup Circle Chart (Input Space)
+            const margin = {top: 20, right: 20, bottom: 20, left: 20};
+            const width = 250, height = 250;
+            const cx = width/2, cy = height/2, r = 80;
+
+            const svgCircle = d3.select("#circle-chart").append("svg")
+                .attr("viewBox", `0 0 ${width} ${height}`);
+            
+            // Draw Stimuli (50 points)
+            const stimuli = d3.range(50).map(i => {
+                const angle = (i / 50) * 2 * Math.PI - Math.PI/2;
+                return {x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle), angle: angle};
+            });
+
+            // Base circle
+            svgCircle.append("circle").attr("cx", cx).attr("cy", cy).attr("r", r).attr("fill", "none").attr("stroke", "#eee").attr("stroke-width", 2);
+
+            // Points
+            const points = svgCircle.selectAll(".stim").data(stimuli).enter().append("circle")
+                .attr("cx", d => d.x).attr("cy", d => d.y).attr("r", 3).attr("fill", "#ccc");
+
+            // Similarity Distribution (The Arc)
+            const similarityArc = svgCircle.append("path").attr("fill", COLORS.accentLight).attr("opacity", 0.8);
+            svgCircle.append("circle").attr("cx", cx).attr("cy", cy - r).attr("r", 6).attr("fill", COLORS.accent);
+
+            // Setup Trajectory Chart (AXES FLIPPED HERE TOO to match above)
+            const tWidth = 300, tHeight = 250;
+            const tMargin = {top: 20, right: 20, bottom: 40, left: 50};
+            
+            const svgTraj = d3.select("#trajectory-chart").append("svg")
+                .attr("viewBox", `0 0 ${tWidth} ${tHeight}`);
+            
+            // X = pS, Y = pI
+            const xT = d3.scaleLinear().domain([0.5, 1]).range([tMargin.left, tWidth - tMargin.right]);
+            const yT = d3.scaleLinear().domain([0.5, 1]).range([tHeight - tMargin.bottom, tMargin.top]);
+
+            // Axes
+            svgTraj.append("g").attr("transform", `translate(0,${tHeight - tMargin.bottom})`).call(d3.axisBottom(xT).ticks(3));
+            svgTraj.append("g").attr("transform", `translate(${tMargin.left},0)`).call(d3.axisLeft(yT).ticks(3));
+            
+            // Labels
+            svgTraj.append("text").attr("x", tWidth/2).attr("y", tHeight - 5).attr("font-size", "10px").attr("text-anchor", "middle").text("p_S");
+            svgTraj.append("text").attr("transform", "rotate(-90)").attr("x", -tHeight/2).attr("y", 15).attr("font-size", "10px").attr("text-anchor", "middle").text("p_I");
+
+            // Draw Background Curves (Reference)
+            const LOG2 = Math.log(2);
+            const curveData = d3.range(0, 1.01, 0.05).map(b => ({
+                pi: 1 - (1 - LOG2)*b,
+                ps: 0.5 + b - (1.5 - LOG2)*b*b
+            })).filter(d => d.pi >= 0.5 && d.ps >= 0.5);
+            
+            // Swapped: x(d.ps), y(d.pi)
+            const lineGen = d3.line().x(d => xT(d.ps)).y(d => yT(d.pi)).curve(d3.curveBasis);
+            svgTraj.append("path").attr("d", lineGen(curveData)).attr("fill", "none").attr("stroke", "#ddd").attr("stroke-width", 2).attr("stroke-dasharray", "4,4");
+
+            // Live Trajectory Path
+            const livePath = svgTraj.append("path").attr("fill", "none").attr("stroke", COLORS.accent).attr("stroke-width", 2);
+            const headDot = svgTraj.append("circle").attr("r", 4).attr("fill", COLORS.accent);
+
+            // Animation Logic
+            window.startLearning = function() {
+                clearInterval(toyInterval);
+                let epoch = 0;
+                const maxEpochs = 100;
+                let pathData = [];
+
+                toyInterval = setInterval(() => {
+                    epoch++;
+                    if(epoch > maxEpochs) { clearInterval(toyInterval); return; }
+
+                    const progress = epoch / maxEpochs;
+                    const b_ideal = 1.0 - (progress * 0.7); 
+                    const noise = 0.4 * Math.exp(-progress * 5); 
+
+                    const pi_target = 1 - (1 - LOG2)*b_ideal;
+                    const ps_target = 0.5 + b_ideal - (1.5 - LOG2)*b_ideal*b_ideal;
+
+                    const pi_curr = (pi_target * (1-noise)) + (0.5 * noise);
+                    const ps_curr = (ps_target * (1-noise)) + (0.5 * noise);
+
+                    // Update Trajectory
+                    pathData.push({pi: pi_curr, ps: ps_curr});
+                    livePath.attr("d", lineGen(pathData));
+                    // Dot uses swapped coords: cx=ps, cy=pi
+                    headDot.attr("cx", xT(ps_curr)).attr("cy", yT(pi_curr));
+
+                    // Update Circle Viz
+                    const epsilon = b_ideal / 2;
+                    // Ensure arc doesn't exceed full circle if epsilon is huge
+                    const arcAngle = Math.min(2*Math.PI, epsilon * 2 * Math.PI); 
+                    
+                    const arcGen = d3.arc()
+                        .innerRadius(r - 10)
+                        .outerRadius(r + 10)
+                        .startAngle(-Math.PI/2 - arcAngle/2)
+                        .endAngle(-Math.PI/2 + arcAngle/2);
+                    
+                    similarityArc.attr("d", arcGen);
+
+                    // Color points
+                    points.attr("fill", d => {
+                        let angDist = Math.abs(d.angle - (-Math.PI/2));
+                        if(angDist > Math.PI) angDist = 2*Math.PI - angDist;
+                        const dist = angDist / (2*Math.PI);
+                        const sim = Math.max(0, 1 - dist/epsilon);
+                        return d3.interpolateRgb("#ccc", COLORS.accent)(sim);
+                    });
+
+                    // Update Text
+                    document.getElementById("learn-epoch").innerText = epoch;
+                    document.getElementById("learn-epsilon").innerText = epsilon.toFixed(3);
+
+                }, 50);
+            }
+
+            window.resetLearning = function() {
+                clearInterval(toyInterval);
+                livePath.attr("d", "");
+                headDot.attr("cx", -10).attr("cy", -10);
+                similarityArc.attr("d", "");
+                points.attr("fill", "#ccc");
+                document.getElementById("learn-epoch").innerText = "0";
+                document.getElementById("learn-epsilon").innerText = "0.50";
+            }
+        }
+    </script>
+</body>
+</html>
