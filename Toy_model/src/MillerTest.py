@@ -1,3 +1,29 @@
+"""
+Model architectures and evaluation for the G-I tradeoff experiments.
+
+Provides two model classes and an evaluator:
+
+Models:
+  - TransformerModel: A single linear projection (input_dim -> feature_dim)
+    with no bias.  Similarity between stimuli is computed as the ReLU of
+    their inner product in the embedding space.  This is the "non-slot"
+    baseline model.
+  - CompositionalModel: Independent per-slot linear projections whose
+    embeddings are summed for the combined representation.  Similarity
+    decisions use a *max-over-slots* rule: two stimuli are similar if they
+    share at least one slot with high inner-product overlap.
+
+Evaluator:
+  - MillerTestEvaluator: Runs both the similarity (G-score) and
+    identification (I-score) tasks over batches produced by a data generator.
+    Also tracks a confusion matrix for the similarity task (non-compositional
+    models only).
+
+Both models expose the same forward signature:
+    forward(x) -> (embeddings, reconstruction)
+so they can be used interchangeably by the trainer and evaluator.
+"""
+
 import torch
 import torch.nn as nn
 import numpy as np

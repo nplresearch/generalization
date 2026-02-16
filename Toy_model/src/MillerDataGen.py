@@ -1,3 +1,31 @@
+"""
+Data generators for the Generalization-Identification (G-I) tradeoff experiments.
+
+This module provides synthetic stimulus data for testing Miller's Law predictions
+about the tradeoff between similarity-based generalization (G) and absolute
+identification (I). Two generator classes are provided:
+
+- MillerDataGenerator: Generates batches for the standard (flat) case where each
+  stimulus is a single categorical item drawn from a vocabulary of size `num_inputs`.
+  Distance between stimuli is controlled via a configurable metric matrix.
+
+- CompositionalDataGenerator: Extends the paradigm to multi-slot (compositional)
+  stimuli, where each stimulus is a tuple of categorical features (one per slot).
+  Per-slot distance matrices are aggregated (min / max / L1 / L2) to determine
+  the overall distance used for labelling similarity trials.
+
+Both generators expose the same public API:
+    generate_similarity_test_batch()      -> (inputs, labels)
+    generate_identification_test_batch()  -> (inputs, labels)
+    indices_to_inputs(indices)            -> one-hot / multi-hot tensor
+
+Similarity trials: a probe is compared to K-1 context stimuli; the label is the
+index of the context element closest to the probe under the metric.
+
+Identification trials: the probe is guaranteed to be an exact copy of one context
+element; the label indicates which one.
+"""
+
 import torch
 import numpy as np
 from dataclasses import dataclass

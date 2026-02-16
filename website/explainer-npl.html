@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Curse of Generalization | NPL Research</title>
+    
+    <!-- NPL Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500&family=Vollkorn:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    
+    <!-- KaTeX -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    
+    <!-- D3.js -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    
+    <style>
+        :root {
+            --clr-red: #ff2850;
+            --clr-mixred: #8f2543;
+            --clr-mixred-dark: #461b2a;
+            --clr-cyan: #4db7dd;
+            --clr-purple: #5751d0;
+            --clr-orange: #ff9600;
+            
+            --clr-foreground-deep: #0b0c0e;
+            --clr-foreground: #12141c;
+            --clr-background-deep: #f8f8fa;
+            --clr-background: #f1f1f4;
+            --clr-base: #e0e3eb;
+            --clr-lowlight1: #c7c8d1;
+            --clr-lowlight2: #abaeba;
+            --clr-highlight1: #1e2235;
+            --clr-highlight2: #2b3044;
+            
+            --text1: var(--clr-foreground-deep);
+            --text2: var(--clr-foreground);
+            --text3: var(--clr-highlight1);
+            
+            --base-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        body {
+            font-family: "Noto Sans TC", sans-serif;
+            background-color: var(--clr-background-deep);
+            color: var(--text3);
+            line-height: 1.8;
+            font-size: 16px;
+            font-weight: 300;
+            background-image: radial-gradient(var(--clr-background) 1.1px, transparent 0);
+            background-size: 11px 11px;
+            background-position: -19px -19px;
+        }
+        
+        /* Navigation */
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            padding: 1rem 2rem;
+            background: rgba(248, 248, 250, 0.9);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--clr-lowlight1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .nav-logo {
+            font-family: "Helvetica", "Arial", sans-serif;
+            font-weight: 800;
+            font-size: 0.9rem;
+            letter-spacing: 0.2rem;
+            text-transform: uppercase;
+            color: var(--text1);
+            text-decoration: none;
+        }
+        
+        .nav-logo:hover {
+            color: var(--clr-mixred);
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+        
+        .nav-links a {
+            font-family: "Helvetica", "Arial", sans-serif;
+            font-size: 0.75rem;
+            letter-spacing: 0.15rem;
+            text-transform: uppercase;
+            color: var(--text3);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        
+        .nav-links a:hover {
+            color: var(--clr-mixred);
+        }
+        
+        /* Container */
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 6rem 2rem 4rem;
+        }
+        
+        /* Header */
+        .header {
+            margin-bottom: 4rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--clr-lowlight1);
+        }
+        
+        .header-meta {
+            font-family: "Helvetica", "Arial", sans-serif;
+            font-size: 0.7rem;
+            font-weight: 400;
+            text-transform: uppercase;
+            letter-spacing: 0.25rem;
+            color: var(--clr-mixred);
+            margin-bottom: 1.5rem;
+        }
+        
+        h1 {
+            font-family: "Helvetica", "Arial", sans-serif;
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: 0.1rem;
+            color: var(--text1);
+            line-height: 1.2;
+            margin-bottom: 1.5rem;
+        }
+        
+        .header-subtitle {
+            font-family: "Vollkorn", Georgia, serif;
+            font-size: 1.25rem;
+            font-weight: 400;
+            font-style: italic;
+            color: var(--text3);
+            line-height: 1.6;
+        }
+        
+        .header-authors {
+            margin-top: 2rem;
+            font-size: 0.85rem;
+            color: var(--clr-lowlight2);
+        }
+        
+        .header-authors a {
+            color: var(--clr-mixred);
+            text-decoration: none;
+        }
+        
+        .header-authors a:hover {
+            text-decoration: underline;
+        }
+        
+        /* Section titles */
+        .displaytitle {
+            font-family: "Helvetica", "Arial", sans-serif;
+            font-size: 0.8rem;
+            font-weight: 800;
+            letter-spacing: 0.25rem;
+            text-transform: uppercase;
+            color: var(--clr-mixred);
+            margin: 4rem 0 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--clr-mixred);
+            display: inline-block;
+        }
+        
+        h2 {
+            font-family: "Helvetica", "Arial", sans-serif;
+            font-size: 1.4rem;
+            font-weight: 500;
+            letter-spacing: 0.05rem;
+            color: var(--text1);
+            margin: 3rem 0 1.5rem;
+        }
+        
+        h3 {
+            font-family: "Noto Sans TC", sans-serif;
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: var(--text1);
+            margin: 2rem 0 1rem;
+        }
+        
+        /* Content */
+        p {
+            margin-bottom: 1.5rem;
+            letter-spacing: 0.02rem;
+        }
+        
+        a {
+            color: var(--clr-mixred);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        
+        a:hover {
+            color: var(--clr-red);
+        }
+        
+        strong {
+            font-weight: 500;
+            color: var(--text1);
+        }
+        
+        em {
+            font-style: italic;
+        }
+        
+        /* Lists */
+        ul, ol {
+            margin: 1.5rem 0;
+            padding-left: 1.5rem;
+        }
+        
+        li {
+            margin-bottom: 0.75rem;
+        }
+        
+        /* Blockquote */
+        blockquote {
+            margin: 2rem 0;
+            padding: 1.5rem 2rem;
+            background: white;
+            border-left: 4px solid var(--clr-mixred);
+            border-radius: 0 8px 8px 0;
+            box-shadow: var(--base-shadow);
+            font-family: "Vollkorn", Georgia, serif;
+            font-style: italic;
+            color: var(--text2);
+        }
+        
+        blockquote cite {
+            display: block;
+            margin-top: 1rem;
+            font-family: "Noto Sans TC", sans-serif;
+            font-size: 0.85rem;
+            font-style: normal;
+            color: var(--clr-lowlight2);
+        }
+        
+        /* Cards */
+        .card {
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            background-color: #ffffff;
+            box-shadow: var(--base-shadow);
+            border: 1px solid var(--clr-lowlight1);
+            margin: 1.5rem 0;
+            transition: border-color 0.3s;
+        }
+        
+        .card:hover {
+            border-color: var(--clr-mixred);
+        }
+        
+        .card-title {
+            font-family: "Noto Sans TC", sans-serif;
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text1);
+            margin-bottom: 0.5rem;
+        }
+        
+        .card-meta {
+            font-size: 0.85rem;
+            color: var(--clr-lowlight2);
+        }
+        
+        /* Callout */
+        .callout {
+            margin: 2rem 0;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, rgba(143, 37, 67, 0.05) 0%, rgba(143, 37, 67, 0.02) 100%);
+            border: 1px solid rgba(143, 37, 67, 0.2);
+            border-radius: 8px;
+        }
+        
+        .callout-title {
+            font-family: "Helvetica", "Arial", sans-serif;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.15rem;
+            text-transform: uppercase;
+            color: var(--clr-mixred);
+            margin-bottom: 0.75rem;
+        }
+        
+        .callout p {
+            margin-bottom: 0;
+            font-size: 0.95rem;
+        }
+        
+        /* Math */
+        .math-block {
+            margin: 2rem 0;
+            padding: 1.5rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: var(--base-shadow);
+            border: 1px solid var(--clr-lowlight1);
+            text-align: center;
+            overflow-x: auto;
+        }
+        
+        /* Interactive visualization */
+        .interactive {
+            margin: 3rem 0;
+            padding: 2rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--base-shadow);
+            border: 1px solid var(--clr-lowlight1);
+        }
+        
+        .interactive-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--clr-base);
+        }
+        
+        .interactive-title {
+            font-family: "Helvetica", "Arial", sans-serif;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.2rem;
+            text-transform: uppercase;
+            color: var(--text1);
+        }
+        
+        .viz-container {
+            display: flex;
+            gap: 2rem;
+            align-items: flex-start;
+        }
+        
+        .viz-chart {
+            flex: 1;
+            min-height: 300px;
+        }
+        
+        .viz-controls {
+            width: 200px;
+        }
+        
+        .control-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .control-label {
+            font-size: 0.8rem;
+            color: var(--text3);
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .control-value {
+            font-weight: 500;
+            color: var(--clr-mixred);
+            font-family: "SF Mono", "Monaco", monospace;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            border-radius: 2px;
+            background: var(--clr-base);
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--clr-mixred);
+            cursor: pointer;
+            border: 3px solid white;
+            box-shadow: 0 2px 6px rgba(143, 37, 67, 0.3);
+        }
+        
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--clr-base);
+            font-size: 0.85rem;
+        }
+        
+        .metric-row:last-child {
+            border-bottom: none;
+        }
+        
+        .metric-label {
+            color: var(--text3);
+        }
+        
+        .metric-value {
+            font-family: "SF Mono", "Monaco", monospace;
+            font-weight: 500;
+            color: var(--text1);
+        }
+        
+        /* Figure */
+        .figure {
+            margin: 3rem 0;
+            padding: 2rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--base-shadow);
+            border: 1px solid var(--clr-lowlight1);
+        }
+        
+        .figure-caption {
+            font-size: 0.85rem;
+            color: var(--clr-lowlight2);
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--clr-base);
+        }
+        
+        /* Button */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: var(--clr-mixred);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-family: "Helvetica", "Arial", sans-serif;
+            font-size: 0.75rem;
+            font-weight: 500;
+            letter-spacing: 0.1rem;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn:hover {
+            background: var(--clr-red);
+            transform: translateY(-1px);
+        }
+        
+        /* Footer */
+        .footer {
+            margin-top: 4rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--clr-lowlight1);
+        }
+        
+        .footer h3 {
+            font-family: "Helvetica", "Arial", sans-serif;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.2rem;
+            text-transform: uppercase;
+            color: var(--text1);
+            margin-bottom: 1.5rem;
+        }
+        
+        .footer p {
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 { font-size: 1.8rem; }
+            .nav { padding: 1rem; }
+            .nav-links { display: none; }
+            .container { padding: 5rem 1rem 3rem; }
+            .viz-container { flex-direction: column; }
+            .viz-controls { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <a href="https://nplresearch.github.io" class="nav-logo">NPL Research</a>
+        <div class="nav-links">
+            <a href="https://nplresearch.github.io/#papers">Papers</a>
+            <a href="https://nplresearch.github.io/#people">People</a>
+            <a href="https://nplresearch.github.io/#projects">Projects</a>
+        </div>
+    </nav>
+    
+    <article class="container">
+        <header class="header">
+            <div class="header-meta">Research Explainer · June 2025</div>
+            <h1>The Curse of Generalization</h1>
+            <p class="header-subtitle">Why the same property that makes neural networks powerful—shared, distributed representations—imposes hard limits on what they can do.</p>
+            <div class="header-authors">
+                Based on <a href="https://arxiv.org/abs/2506.14797">"Bound by Semanticity"</a> (Nurisso et al.) and related work from the Princeton-NPL collaboration
+            </div>
+        </header>
+        
+        <section>
+            <p>Here's a puzzle that should bother you: state-of-the-art vision-language models can write poetry about an image, identify obscure art styles, and reason about complex scenes—but ask them to count how many apples are on a table, and they fall apart.</p>
+            
+            <p>GPT-4V struggles with counting. Gemini confuses spatial relationships. DALL-E can't reliably generate "three red cubes." These aren't edge cases or cherry-picked failures. They're <em>systematic</em>.</p>
+            
+            <p>For years, researchers treated this as an engineering problem—something we'd fix with more data, better architectures, or clever prompting. But a series of recent papers from Princeton and collaborators suggests something more fundamental is going on.</p>
+            
+            <p><strong>The same property that makes these models so good at generalization—shared, distributed representations—imposes hard limits on their ability to process multiple items at once.</strong></p>
+            
+            <p>This isn't a bug to be fixed. It's a <em>law</em> to be understood.</p>
+        </section>
+        
+        <section>
+            <div class="displaytitle">Background</div>
+            <h2>A Decade of Convergence</h2>
+            
+            <p>The result we'll discuss—an exact mathematical tradeoff between generalization and identification—is the culmination of several research threads converging over the past decade.</p>
+            
+            <div class="card">
+                <div class="card-title">Rationalizing Constraints on the Capacity for Cognitive Control</div>
+                <div class="card-meta">Musslick & Cohen · <em>Trends in Cognitive Sciences</em>, 2021</div>
+            </div>
+            
+            <p>In 2021, Sebastian Musslick and Jonathan Cohen argued that human multitasking limits aren't arbitrary—they emerge from a fundamental computational tradeoff. Neural systems that share representations across tasks can learn quickly and generalize flexibly, but they pay a cost: those same shared representations cause <strong>interference</strong> when you try to do multiple things at once.</p>
+            
+            <div class="card">
+                <div class="card-title">Learning Representations that Support Extrapolation</div>
+                <div class="card-meta">Webb, Dulberg, Frankland et al. · <em>ICML</em>, 2020</div>
+            </div>
+            
+            <p>Meanwhile, Taylor Webb and colleagues were approaching a related problem: why do neural networks struggle to extrapolate beyond their training data? They found that representations supporting extrapolation need to capture <strong>relational structure</strong>—the relationships between stimuli, not just their absolute features.</p>
+            
+            <div class="card">
+                <div class="card-title">No Coincidence, George: Processing Limits as the Curse of Generalization</div>
+                <div class="card-meta">Frankland, Webb, Lewis & Cohen · <em>PsyArXiv</em>, 2025</div>
+            </div>
+            
+            <p>The pieces came together in a 2025 preprint that gave the phenomenon a name: <strong>the curse of generalization</strong>. The "Bound by Semanticity" paper provides the precise formalization.</p>
+        </section>
+        
+        <section>
+            <div class="displaytitle">The Framework</div>
+            <h2>Two Tasks Every Brain Must Do</h2>
+            
+            <p>The paper formalizes the tradeoff using two canonical tasks from cognitive psychology:</p>
+            
+            <ol>
+                <li><strong>Generalization (Similarity)</strong>: Given two reference stimuli and a probe, which reference is the probe more similar to?</li>
+                <li><strong>Identification</strong>: Given two references and told the probe equals one of them, which one is it?</li>
+            </ol>
+            
+            <p>At first glance, these should go hand-in-hand. A good representation should excel at both, right?</p>
+            
+            <p>Wrong. There's a deep tension—one that connects to the <strong>binding problem</strong> in cognitive science.</p>
+            
+            <div class="callout">
+                <div class="callout-title">The Binding Problem</div>
+                <p>When you see a red square and a blue circle, how does your brain keep track of which color goes with which shape? Distributed representations make this hard—the "red" and "square" features might activate overlapping neurons. Without some mechanism to keep them separate, you get binding errors.</p>
+            </div>
+            
+            <p>To generalize well, representations need to be <em>distributed</em>—similar things have overlapping, fuzzy representations that capture shared structure. But to identify well, representations need to be <em>sharp</em>—each stimulus needs its own distinct signature.</p>
+        </section>
+        
+        <section>
+            <div class="displaytitle">The Math</div>
+            <h2>Semantic Resolution</h2>
+            
+            <p>The paper's core insight is that the tradeoff is governed by a single parameter: <strong>semantic resolution</strong>, denoted ε.</p>
+            
+            <p>Your model has a similarity function <em>g(x, y)</em> that measures how "close" two stimuli are in representation space. The resolution ε is essentially the radius within which your model can meaningfully compare things.</p>
+            
+            <div class="callout">
+                <div class="callout-title">Key Intuition</div>
+                <p>If ε is small, your similarity function is sharp—you can tell nearby things apart, but lose relationships between distant things. If ε is large, your similarity function is broad—you capture long-range structure, but nearby things blur together.</p>
+            </div>
+            
+            <p>For a "constant similarity" model (things within ε are similar, things beyond are not), the probabilities of success have closed-form expressions:</p>
+            
+            <div class="math-block">
+                $$p_S = \frac{1}{2} + b - b^2 \qquad p_I = 1 - \frac{b}{2}$$
+            </div>
+            
+            <p>where <em>b</em> = <em>b(ε)</em> is the fraction of the stimulus space covered by a ball of radius ε.</p>
+        </section>
+        
+        <section>
+            <div class="displaytitle">Interactive</div>
+            <h2>Explore the Tradeoff</h2>
+            
+            <div class="interactive">
+                <div class="interactive-header">
+                    <div class="interactive-title">The Generalization-Identification Pareto Front</div>
+                </div>
+                <div class="viz-container">
+                    <div class="viz-chart" id="pareto-chart"></div>
+                    <div class="viz-controls">
+                        <div class="control-group">
+                            <div class="control-label">
+                                <span>Resolution ε</span>
+                                <span class="control-value" id="eps-display">0.25</span>
+                            </div>
+                            <input type="range" id="eps-slider" min="0.01" max="0.5" step="0.01" value="0.25">
+                        </div>
+                        
+                        <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--clr-base);">
+                            <div class="metric-row">
+                                <span class="metric-label">p<sub>S</sub> (Generalization)</span>
+                                <span class="metric-value" id="ps-display">0.750</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">p<sub>I</sub> (Identification)</span>
+                                <span class="metric-value" id="pi-display">0.847</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">b(ε) = 2ε</span>
+                                <span class="metric-value" id="b-display">0.50</span>
+                            </div>
+                        </div>
+                        
+                        <p style="font-size: 0.75rem; color: var(--clr-lowlight2); margin-top: 1rem; line-height: 1.5;">
+                            <strong style="color: var(--text1);">Black curve:</strong> Linear decay similarity<br>
+                            <strong style="color: var(--clr-lowlight2);">Gray dashed:</strong> Constant similarity
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <p>Notice: <strong>p<sub>S</sub> peaks when b = 0.5</strong>—when the resolution ball covers exactly half the stimulus space. Go beyond this, and <em>both</em> generalization and identification get worse.</p>
+        </section>
+        
+        <section>
+            <div class="displaytitle">Scaling</div>
+            <h2>The 1/n Collapse</h2>
+            
+            <p>What happens when you have <em>n</em> items instead of 2? The news is bad: identification performance collapses as <strong>1/n</strong>:</p>
+            
+            <div class="math-block">
+                $$p_I^n \approx \frac{1}{b \cdot n}$$
+            </div>
+            
+            <p>If your model has learned representations that support generalization (b ≈ 0.5), going from 2 items to 10 items drops identification accuracy by roughly 5×.</p>
+            
+            <div class="callout">
+                <div class="callout-title">Miller's Law Explained</div>
+                <p>The famous "7 ± 2" limit on working memory items isn't an implementation detail—it's a fundamental consequence of using representations structured for generalization. Any system that can flexibly generalize will hit capacity limits on multi-item processing.</p>
+            </div>
+        </section>
+        
+        <section>
+            <div class="displaytitle">Emergence</div>
+            <h2>Emergence in Neural Networks</h2>
+
+            <p>The theoretical results above assume a particular form for the similarity function. But what happens when you train a neural network end-to-end?</p>
+
+            <p>A minimal 2-layer ReLU network, trained on a similarity task, <strong>spontaneously develops a resolution boundary</strong>. The network learns to represent nearby stimuli with positive inner products and distant stimuli with negative inner products—which the ReLU then clips to zero.</p>
+
+            <p>During training, the empirical (p<sub>S</sub>, p<sub>I</sub>) trajectory closely tracks the theoretical Pareto front. The network doesn't know about the equations—it discovers them through gradient descent.</p>
+
+            <div class="figure">
+                <div style="display: flex; gap: 1.5rem;">
+                    <div style="flex: 1;">
+                        <div style="font-family: 'Helvetica', 'Arial', sans-serif; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.15rem; text-transform: uppercase; color: var(--text3); margin-bottom: 0.5rem; text-align: center;">Stimulus Circle with Learned Similarity</div>
+                        <div id="circle-chart" style="height: 250px;"></div>
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="font-family: 'Helvetica', 'Arial', sans-serif; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.15rem; text-transform: uppercase; color: var(--text3); margin-bottom: 0.5rem; text-align: center;">Training Trajectory</div>
+                        <div id="trajectory-chart" style="height: 250px;"></div>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 1rem;">
+                    <button id="play-btn" class="btn">▶ Play Training</button>
+                </div>
+                <div class="figure-caption">
+                    <strong>Left:</strong> 50 stimuli on the flat circle [0,1]. The red dot is the reference; colored arc shows the learned resolution ε. Points transition from blue (low similarity) to green (high similarity) as the network learns.<br>
+                    <strong>Right:</strong> The (p<sub>S</sub>, p<sub>I</sub>) trajectory during training approaches the Proposition 1 curve.
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="displaytitle">Validation</div>
+            <h2>From Theory to Reality</h2>
+            
+            <p>These limits aren't artifacts of simple setups. The paper tests CNNs on bird species classification, LLMs on temporal comparisons, and VLMs on spatial proximity tasks.</p>
+            
+            <p>In all cases, models exhibit clear resolution limits. The signature is universal: accuracy is high within the resolution boundary, then drops to chance beyond it.</p>
+            
+            <p>This explains why VLMs can describe complex scenes but fail at counting: scene description relies on coarse-grained semantic relationships (large ε), while counting requires fine-grained identification (small ε).</p>
+        </section>
+        
+        <section>
+            <div class="displaytitle">Implications</div>
+            <h2>What This Means</h2>
+            
+            <h3>1. Architecture Won't Save You</h3>
+            <p>The Pareto front is independent of model architecture. More parameters can improve where you are on the front, but can't push you above it.</p>
+            
+            <h3>2. The Tradeoff Is Rational</h3>
+            <p>Given that representations supporting generalization necessarily cause interference, the observed limits on multitasking and working memory aren't design flaws—they're optimal given the goal of flexible intelligence.</p>
+            
+            <h3>3. VLM Failures Are a Feature</h3>
+            <p>These models have learned compositional, distributed representations (which is why they generalize so impressively), and such representations necessarily produce interference when processing multiple items.</p>
+            
+            <blockquote>
+                "The binding errors exhibited by VLMs suggest that they have developed compositional representations, perhaps as a consequence of being forced to generalize by their immense and highly diverse training corpora."
+                <cite>— Campbell et al., NeurIPS 2024</cite>
+            </blockquote>
+        </section>
+        
+        <section>
+            <div class="displaytitle">Open Questions</div>
+            <h2>What's Next</h2>
+            
+            <ul>
+                <li>Can we <strong>measure</strong> semantic resolution in pretrained models?</li>
+                <li>How do humans navigate this tradeoff? Does the brain dynamically adjust representation sharpness?</li>
+                <li>Can <strong>compositional representations</strong> escape the bound?</li>
+                <li>Is there an optimal training curriculum for controlling where a model lands on the Pareto front?</li>
+            </ul>
+            
+            <p>If the curse of generalization is truly fundamental, it suggests that human-level general intelligence may require architectural innovations we haven't yet discovered.</p>
+        </section>
+        
+        <section class="footer">
+            <h3>Further Reading</h3>
+            
+            <p><strong>Primary paper:</strong><br>
+            Nurisso et al. (2025). <a href="https://arxiv.org/abs/2506.14797">Bound by Semanticity</a>. arXiv:2506.14797</p>
+            
+            <p><strong>Background:</strong><br>
+            Musslick & Cohen (2021). <a href="https://www.cell.com/trends/cognitive-sciences/fulltext/S1364-6613(21)00148-0">Rationalizing constraints on the capacity for cognitive control</a>. <em>TiCS</em>.</p>
+            
+            <p><strong>Extrapolation:</strong><br>
+            Webb et al. (2020). <a href="https://proceedings.mlr.press/v119/webb20a.html">Learning Representations that Support Extrapolation</a>. <em>ICML</em>.</p>
+            
+            <p><strong>VLMs and binding:</strong><br>
+            Campbell et al. (2024). <a href="https://arxiv.org/abs/2411.00238">Understanding the Limits of VLMs Through the Lens of the Binding Problem</a>. <em>NeurIPS</em>.</p>
+
+            <p><strong>The curse of generalization:</strong><br>
+            Frankland, Webb, Lewis & Cohen (2025). <a href="https://osf.io/preprints/psyarxiv/cjuxb_v2">No Coincidence, George: Processing Limits as the Curse of Generalization</a>. <em>PsyArXiv</em>.</p>
+        </section>
+    </article>
+    
+    <script>
+        // Initialize KaTeX
+        document.addEventListener("DOMContentLoaded", function() {
+            renderMathInElement(document.body, {
+                delimiters: [
+                    {left: "$$", right: "$$", display: true},
+                    {left: "$", right: "$", display: false}
+                ]
+            });
+        });
+        
+        // Pareto Front Visualization
+        (function() {
+            const margin = { top: 20, right: 20, bottom: 45, left: 50 };
+            const width = 380 - margin.left - margin.right;
+            const height = 300 - margin.top - margin.bottom;
+            
+            const svg = d3.select("#pareto-chart")
+                .append("svg")
+                .attr("viewBox", `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`)
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+            
+            const x = d3.scaleLinear().domain([0.5, 1]).range([0, width]);
+            const y = d3.scaleLinear().domain([0.5, 1]).range([height, 0]);
+            
+            // Grid
+            svg.append("g")
+                .attr("class", "grid")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(x).ticks(5).tickSize(-height))
+                .selectAll("line")
+                .attr("stroke", "#e0e3eb")
+                .attr("stroke-dasharray", "2,2");
+            
+            svg.append("g")
+                .attr("class", "grid")
+                .call(d3.axisLeft(y).ticks(5).tickSize(-width))
+                .selectAll("line")
+                .attr("stroke", "#e0e3eb")
+                .attr("stroke-dasharray", "2,2");
+            
+            // Axes
+            svg.append("g")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(x).ticks(5))
+                .selectAll("text")
+                .style("font-family", "Noto Sans TC")
+                .style("font-size", "11px")
+                .style("fill", "#1e2235");
+            
+            svg.append("g")
+                .call(d3.axisLeft(y).ticks(5))
+                .selectAll("text")
+                .style("font-family", "Noto Sans TC")
+                .style("font-size", "11px")
+                .style("fill", "#1e2235");
+            
+            // Axis labels
+            svg.append("text")
+                .attr("x", width / 2)
+                .attr("y", height + 35)
+                .attr("fill", "#1e2235")
+                .style("font-size", "11px")
+                .style("font-family", "Noto Sans TC")
+                .style("text-anchor", "middle")
+                .text("pᵢ (Identification)");
+            
+            svg.append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("x", -height / 2)
+                .attr("y", -35)
+                .attr("fill", "#1e2235")
+                .style("font-size", "11px")
+                .style("font-family", "Noto Sans TC")
+                .style("text-anchor", "middle")
+                .text("pₛ (Generalization)");
+            
+            const LOG2 = Math.log(2);
+            
+            function generateCurve(type) {
+                const points = [];
+                for (let b = 0.001; b <= 1; b += 0.01) {
+                    let pS, pI;
+                    if (type === 'constant') {
+                        pS = 0.5 + b - b*b;
+                        pI = 1 - 0.5*b;
+                    } else {
+                        const coeff = 1.5 - LOG2;
+                        pS = 0.5 + b - coeff * b * b;
+                        pI = 1 - (1 - LOG2) * b;
+                    }
+                    if (pS >= 0.5 && pI >= 0.5) points.push({ pS, pI, b });
+                }
+                return points;
+            }
+            
+            const constantCurve = generateCurve('constant');
+            const linearCurve = generateCurve('linear');
+            
+            const line = d3.line()
+                .x(d => x(d.pI))
+                .y(d => y(d.pS))
+                .curve(d3.curveBasis);
+            
+            // Forbidden region
+            svg.append("path")
+                .attr("d", line(constantCurve) + `L${x(1)},${y(1)}L${x(0.5)},${y(1)}Z`)
+                .attr("fill", "rgba(143, 37, 67, 0.05)");
+            
+            // Constant curve
+            svg.append("path")
+                .attr("d", line(constantCurve))
+                .attr("fill", "none")
+                .attr("stroke", "#abaeba")
+                .attr("stroke-width", 2)
+                .attr("stroke-dasharray", "6,4");
+            
+            // Linear curve
+            svg.append("path")
+                .attr("d", line(linearCurve))
+                .attr("fill", "none")
+                .attr("stroke", "#0b0c0e")
+                .attr("stroke-width", 2.5);
+            
+            // Operating point
+            const point = svg.append("circle")
+                .attr("r", 8)
+                .attr("fill", "#8f2543")
+                .attr("stroke", "white")
+                .attr("stroke-width", 2);
+            
+            const hLine = svg.append("line")
+                .attr("stroke", "#8f2543")
+                .attr("stroke-width", 1)
+                .attr("stroke-dasharray", "4,4")
+                .attr("opacity", 0.4);
+            
+            const vLine = svg.append("line")
+                .attr("stroke", "#8f2543")
+                .attr("stroke-width", 1)
+                .attr("stroke-dasharray", "4,4")
+                .attr("opacity", 0.4);
+            
+            function update(eps) {
+                const b = eps * 2;
+                const coeff = 1.5 - LOG2;
+                const pS = 0.5 + b - coeff * b * b;
+                const pI = 1 - (1 - LOG2) * b;
+                
+                point.attr("cx", x(pI)).attr("cy", y(pS));
+                hLine.attr("x1", 0).attr("y1", y(pS)).attr("x2", x(pI)).attr("y2", y(pS));
+                vLine.attr("x1", x(pI)).attr("y1", y(pS)).attr("x2", x(pI)).attr("y2", height);
+                
+                document.getElementById("eps-display").textContent = eps.toFixed(2);
+                document.getElementById("ps-display").textContent = pS.toFixed(3);
+                document.getElementById("pi-display").textContent = pI.toFixed(3);
+                document.getElementById("b-display").textContent = b.toFixed(2);
+            }
+            
+            document.getElementById("eps-slider").addEventListener("input", function() {
+                update(parseFloat(this.value));
+            });
+            
+            update(0.25);
+        })();
+
+        // =====================================================
+        // LEARNING VISUALIZATION (Emergence section)
+        // =====================================================
+        (function() {
+            const margin = { top: 10, right: 10, bottom: 30, left: 35 };
+            const width = 220;
+            const height = 220;
+
+            // Circle chart
+            const svgCircle = d3.select("#circle-chart")
+                .append("svg")
+                .attr("viewBox", `0 0 ${width} ${height}`)
+                .append("g")
+                .attr("transform", `translate(${width/2}, ${height/2})`);
+
+            const radius = 80;
+            const numStimuli = 50;
+
+            // Draw circle
+            svgCircle.append("circle")
+                .attr("r", radius)
+                .attr("fill", "none")
+                .attr("stroke", "#e0e3eb")
+                .attr("stroke-width", 2);
+
+            // Resolution arc
+            const arc = svgCircle.append("path")
+                .attr("fill", "rgba(143, 37, 67, 0.2)")
+                .attr("stroke", "#8f2543")
+                .attr("stroke-width", 2);
+
+            // Stimuli points
+            const stimuli = [];
+            for (let i = 0; i < numStimuli; i++) {
+                const t = i / numStimuli;
+                const angle = t * 2 * Math.PI - Math.PI/2;
+                stimuli.push({
+                    t, angle,
+                    x: radius * Math.cos(angle),
+                    y: radius * Math.sin(angle)
+                });
+            }
+
+            const points = svgCircle.selectAll(".stim")
+                .data(stimuli)
+                .enter()
+                .append("circle")
+                .attr("class", "stim")
+                .attr("cx", d => d.x)
+                .attr("cy", d => d.y)
+                .attr("r", 4)
+                .attr("fill", "#5751d0");
+
+            // Reference point
+            svgCircle.append("circle")
+                .attr("cx", 0)
+                .attr("cy", -radius)
+                .attr("r", 6)
+                .attr("fill", "#8f2543")
+                .attr("stroke", "white")
+                .attr("stroke-width", 2);
+
+            // Trajectory chart
+            const svgTraj = d3.select("#trajectory-chart")
+                .append("svg")
+                .attr("viewBox", `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`)
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            const xT = d3.scaleLinear().domain([0.5, 1]).range([0, width]);
+            const yT = d3.scaleLinear().domain([0.5, 1]).range([height, 0]);
+
+            svgTraj.append("g")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(xT).ticks(4))
+                .selectAll("text")
+                .style("font-family", "Noto Sans TC")
+                .style("font-size", "10px")
+                .style("fill", "#1e2235");
+
+            svgTraj.append("g")
+                .call(d3.axisLeft(yT).ticks(4))
+                .selectAll("text")
+                .style("font-family", "Noto Sans TC")
+                .style("font-size", "10px")
+                .style("fill", "#1e2235");
+
+            // Pareto front on trajectory
+            const LOG2_T = Math.log(2);
+            const frontPts = [];
+            for (let b = 0.001; b <= 1; b += 0.01) {
+                const coeff = 1.5 - LOG2_T;
+                const pS = 0.5 + b - coeff * b * b;
+                const pI = 1 - (1 - LOG2_T) * b;
+                if (pS >= 0.5 && pI >= 0.5) frontPts.push({ pS, pI });
+            }
+
+            const frontLine = d3.line().x(d => xT(d.pI)).y(d => yT(d.pS)).curve(d3.curveBasis);
+
+            svgTraj.append("path")
+                .attr("d", frontLine(frontPts))
+                .attr("fill", "none")
+                .attr("stroke", "#0b0c0e")
+                .attr("stroke-width", 2);
+
+            // Training trajectory path
+            const trajPath = svgTraj.append("path")
+                .attr("fill", "none")
+                .attr("stroke", "#8f2543")
+                .attr("stroke-width", 2.5)
+                .attr("stroke-linecap", "round");
+
+            const trajMarker = svgTraj.append("circle")
+                .attr("r", 6)
+                .attr("fill", "#ff9600")
+                .attr("stroke", "white")
+                .attr("stroke-width", 2);
+
+            // Generate trajectory data
+            const trajData = [];
+            const numEpochs = 80;
+            for (let i = 0; i <= numEpochs; i++) {
+                const t = i / numEpochs;
+                const b = 0.1 + t * 0.5;
+                const eps = b / 2;
+                const coeff = 1.5 - LOG2_T;
+                const targetPs = 0.5 + b - coeff * b * b;
+                const targetPi = 1 - (1 - LOG2_T) * b;
+                const noise = (1-t)*(1-t)*0.08;
+                const belowFront = (1-Math.pow(t,1.5))*0.06;
+                trajData.push({
+                    epoch: i, b, eps,
+                    pI: Math.max(0.5, targetPi + (Math.random()-0.5)*noise*0.5),
+                    pS: Math.max(0.5, targetPs - belowFront + (Math.random()-0.5)*noise)
+                });
+            }
+
+            let currentEpoch = 0;
+            let playing = false;
+            let animId;
+
+            const trajLine = d3.line().x(d => xT(d.pI)).y(d => yT(d.pS)).curve(d3.curveCardinal.tension(0.5));
+
+            function updateViz(epoch) {
+                const current = trajData[epoch];
+                const eps = current.eps;
+
+                // Update arc
+                const arcAngle = eps * 2 * Math.PI;
+                const arcGen = d3.arc()
+                    .innerRadius(radius - 6)
+                    .outerRadius(radius + 6)
+                    .startAngle(-arcAngle - Math.PI/2)
+                    .endAngle(arcAngle - Math.PI/2);
+                arc.attr("d", arcGen);
+
+                // Update point colors
+                points.attr("fill", d => {
+                    const dist = Math.min(Math.abs(d.t), 1 - Math.abs(d.t));
+                    const sim = Math.max(0, 1 - dist / eps);
+                    if (sim > 0) {
+                        const hue = 120 + (1-sim)*120;
+                        return `hsl(${hue}, 65%, 50%)`;
+                    }
+                    return "#5751d0";
+                }).attr("r", d => {
+                    const dist = Math.min(Math.abs(d.t), 1 - Math.abs(d.t));
+                    const sim = Math.max(0, 1 - dist / eps);
+                    return 3 + sim * 4;
+                });
+
+                // Update trajectory
+                const data = trajData.slice(0, epoch + 1);
+                if (data.length > 1) trajPath.attr("d", trajLine(data));
+                trajMarker.attr("cx", xT(current.pI)).attr("cy", yT(current.pS));
+            }
+
+            function animate() {
+                if (currentEpoch < numEpochs) {
+                    updateViz(currentEpoch);
+                    currentEpoch++;
+                    animId = setTimeout(animate, 60);
+                } else {
+                    playing = false;
+                    document.getElementById("play-btn").textContent = "▶ Play Training";
+                }
+            }
+
+            document.getElementById("play-btn").addEventListener("click", function() {
+                if (playing) {
+                    clearTimeout(animId);
+                    playing = false;
+                    this.textContent = "▶ Play Training";
+                } else {
+                    if (currentEpoch >= numEpochs) {
+                        currentEpoch = 0;
+                        trajPath.attr("d", "");
+                    }
+                    playing = true;
+                    this.textContent = "⏸ Pause";
+                    animate();
+                }
+            });
+
+            updateViz(0);
+        })();
+    </script>
+</body>
+</html>

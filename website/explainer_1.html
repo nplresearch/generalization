@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Curse of Generalization: Why Smart Systems Can't Count</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- KaTeX -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    
+    <!-- D3.js -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    
+    <style>
+        :root {
+            --bg: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --text: #1a1a1a;
+            --text-secondary: #4a5568;
+            --text-muted: #718096;
+            --accent: #c45a3b;
+            --accent-light: #fef2f0;
+            --border: #e2e8f0;
+            --code-bg: #f1f5f9;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Merriweather', Georgia, serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.8;
+            font-size: 18px;
+        }
+        
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 3rem 1.5rem 6rem;
+        }
+        
+        /* Header */
+        .header {
+            margin-bottom: 3rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .meta {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        h1 {
+            font-family: 'Inter', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 1.5rem;
+            color: var(--text);
+        }
+        
+        .subtitle {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+        
+        .authors {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-top: 1.5rem;
+        }
+        
+        .authors a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+        
+        /* Content */
+        h2 {
+            font-family: 'Inter', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 3rem 0 1.5rem;
+            color: var(--text);
+        }
+        
+        h3 {
+            font-family: 'Inter', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin: 2rem 0 1rem;
+            color: var(--text);
+        }
+        
+        p {
+            margin-bottom: 1.5rem;
+        }
+        
+        a {
+            color: var(--accent);
+        }
+        
+        strong {
+            font-weight: 600;
+        }
+        
+        em {
+            font-style: italic;
+        }
+        
+        /* Figures */
+        .figure {
+            margin: 2.5rem -2rem;
+            padding: 1.5rem 2rem;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+        }
+        
+        .figure-caption {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-top: 1rem;
+            text-align: center;
+        }
+        
+        /* Interactive viz */
+        .interactive {
+            margin: 2.5rem 0;
+            padding: 1.5rem;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+        
+        .interactive-title {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .viz-container {
+            display: flex;
+            gap: 1.5rem;
+            align-items: flex-start;
+        }
+        
+        .viz-chart {
+            flex: 1;
+            min-height: 300px;
+        }
+        
+        .viz-controls {
+            width: 200px;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .control-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .control-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .control-value {
+            font-weight: 600;
+            color: var(--accent);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--border);
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            border: 3px solid white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+        
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.9rem;
+        }
+        
+        .metric-row:last-child {
+            border-bottom: none;
+        }
+        
+        .metric-label {
+            color: var(--text-secondary);
+        }
+        
+        .metric-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 500;
+        }
+        
+        /* Callouts */
+        .callout {
+            margin: 2rem 0;
+            padding: 1.25rem 1.5rem;
+            background: var(--accent-light);
+            border-left: 4px solid var(--accent);
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .callout p {
+            margin-bottom: 0;
+            font-size: 1rem;
+        }
+        
+        .callout strong {
+            color: var(--accent);
+        }
+        
+        /* Math */
+        .math-block {
+            margin: 2rem 0;
+            padding: 1.5rem;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            overflow-x: auto;
+            text-align: center;
+        }
+        
+        /* Code */
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9em;
+            background: var(--code-bg);
+            padding: 0.2em 0.4em;
+            border-radius: 4px;
+        }
+        
+        /* Lists */
+        ul, ol {
+            margin: 1.5rem 0;
+            padding-left: 1.5rem;
+        }
+        
+        li {
+            margin-bottom: 0.75rem;
+        }
+        
+        /* Blockquote */
+        blockquote {
+            margin: 2rem 0;
+            padding: 1rem 1.5rem;
+            border-left: 3px solid var(--border);
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+        
+        /* Footer */
+        .footer {
+            margin-top: 4rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+        
+        .footer a {
+            color: var(--accent);
+        }
+        
+        /* Paper references */
+        .paper-ref {
+            background: var(--bg-secondary);
+            padding: 1rem 1.25rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+        }
+        
+        .paper-ref-title {
+            font-weight: 600;
+            color: var(--text);
+        }
+        
+        .paper-ref-authors {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 { font-size: 1.8rem; }
+            .figure { margin: 2rem -1rem; padding: 1rem; }
+            .viz-container { flex-direction: column; }
+            .viz-controls { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <article class="container">
+        <header class="header">
+            <div class="meta">Research Explainer • June 2025</div>
+            <h1>The Curse of Generalization</h1>
+            <p class="subtitle">Why the same property that makes neural networks powerful—shared, distributed representations—imposes hard limits on what they can do.</p>
+            <div class="authors">
+                Based on <a href="https://arxiv.org/abs/2506.14797" target="_blank">"Bound by Semanticity"</a> (Nurisso et al.) and related work from the Princeton-NPL collaboration
+            </div>
+        </header>
+        
+        <section>
+            <p>Here's a puzzle that should bother you: state-of-the-art vision-language models can write poetry about an image, identify obscure art styles, and reason about complex scenes—but ask them to count how many apples are on a table, and they fall apart.</p>
+            
+            <p>GPT-4V struggles with counting. Gemini confuses spatial relationships. DALL-E can't reliably generate "three red cubes." These aren't edge cases or cherry-picked failures. They're <em>systematic</em>.</p>
+            
+            <p>For years, researchers treated this as an engineering problem—something we'd fix with more data, better architectures, or clever prompting. But a series of recent papers from Princeton and collaborators suggests something more fundamental is going on.</p>
+            
+            <p><strong>The same property that makes these models so good at generalization—shared, distributed representations—imposes hard limits on their ability to process multiple items at once.</strong></p>
+            
+            <p>This isn't a bug to be fixed. It's a <em>law</em> to be understood.</p>
+        </section>
+        
+        <section>
+            <h2>The Bigger Picture: A Decade of Convergence</h2>
+            
+            <p>To understand why this matters, we need to zoom out. The result we'll discuss—an exact mathematical tradeoff between generalization and identification—is the culmination of several research threads that have been converging over the past decade.</p>
+            
+            <div class="paper-ref">
+                <div class="paper-ref-title">Rationalizing Constraints on the Capacity for Cognitive Control</div>
+                <div class="paper-ref-authors">Musslick & Cohen, <em>Trends in Cognitive Sciences</em>, 2021</div>
+            </div>
+            
+            <p>In 2021, Sebastian Musslick and Jonathan Cohen argued that human multitasking limits aren't arbitrary—they emerge from a fundamental computational tradeoff. Neural systems that share representations across tasks can learn quickly and generalize flexibly, but they pay a cost: those same shared representations cause <strong>interference</strong> when you try to do multiple things at once.</p>
+            
+            <p>This explained a longstanding puzzle in cognitive science: why can humans learn vast amounts of information but process so little of it simultaneously? The answer, Musslick and Cohen proposed, is that these aren't independent constraints. They're two sides of the same coin.</p>
+            
+            <div class="paper-ref">
+                <div class="paper-ref-title">Learning Representations that Support Extrapolation</div>
+                <div class="paper-ref-authors">Webb, Dulberg, Frankland, et al., <em>ICML</em>, 2020</div>
+            </div>
+            
+            <p>Meanwhile, Taylor Webb and colleagues were approaching a related problem: why do neural networks struggle to extrapolate beyond their training data? They found that representations supporting extrapolation need to capture <strong>relational structure</strong>—the relationships between stimuli, not just their absolute features. Their technique, temporal context normalization, encouraged exactly this: representations that encoded "how things differ" rather than "what things are."</p>
+            
+            <p>This work hinted at a deep connection: the representations that support generalization are fundamentally <em>relational</em>, and relational representations require comparing things to each other. But what happens when you have many things to compare?</p>
+            
+            <div class="paper-ref">
+                <div class="paper-ref-title">No Coincidence, George: Processing Limits as the Curse of Generalization</div>
+                <div class="paper-ref-authors">Frankland, Webb, Lewis & Cohen, <em>PsyArXiv</em>, 2025</div>
+            </div>
+            
+            <p>The pieces came together in a 2025 preprint that gave the phenomenon a name: <strong>the curse of generalization</strong>. Frankland et al. showed that the tradeoff between representational efficiency (how compactly you encode information, enabling generalization) and processing efficiency (how many things you can handle at once) isn't just a qualitative observation—it can be made precise.</p>
+            
+            <p>The "Bound by Semanticity" paper provides that precision: exact equations for the Pareto frontier that governs what's possible.</p>
+        </section>
+        
+        <section>
+            <h2>The Setup: Two Tasks Every Brain Must Do</h2>
+            
+            <p>The "Bound by Semanticity" paper formalizes the tradeoff using two canonical tasks from cognitive psychology:</p>
+            
+            <ol>
+                <li><strong>Generalization (Similarity)</strong>: Given two reference stimuli and a probe, which reference is the probe more similar to? This tests whether your representations capture the <em>structure</em> of the stimulus space.</li>
+                <li><strong>Identification</strong>: Given two references and told the probe equals one of them, which one is it? This tests whether your representations can <em>distinguish</em> individual stimuli.</li>
+            </ol>
+            
+            <p>At first glance, these seem like they should go hand-in-hand. A good representation should be good at both, right?</p>
+            
+            <p>Wrong. There's a deep tension here—one that connects to the <strong>binding problem</strong> in cognitive science.</p>
+            
+            <p>To generalize well, your representations need to be <em>distributed</em>—similar things should have overlapping, fuzzy representations that capture their shared structure. This is exactly what lets neural networks learn from limited data and apply knowledge to new situations. But this same property means that when you have multiple items, their representations <em>interfere</em>.</p>
+            
+            <p>To identify well, your representations need to be <em>sharp</em>—each stimulus needs its own distinct signature that doesn't bleed into others. But sharp representations don't share structure, so they can't support the flexible generalization that makes neural networks powerful.</p>
+            
+            <div class="callout">
+                <p><strong>The binding problem:</strong> When you see a red square and a blue circle, how does your brain keep track of which color goes with which shape? Distributed representations make this hard—the "red" and "square" features might activate overlapping neurons, as might "blue" and "circle." Without some mechanism to keep them separate, you get "illusory conjunctions"—binding errors where you might perceive a blue square or red circle.</p>
+            </div>
+            
+            <p>Recent work by <a href="https://arxiv.org/abs/2411.00238">Campbell et al. (NeurIPS 2024)</a> showed that VLMs exhibit exactly these binding errors—and that this implies they've developed compositional representations, just like humans. The binding failures aren't a sign of weakness; they're a <em>signature of the representational scheme that enables generalization</em>.</p>
+        </section>
+        
+        <section>
+            <h2>The Key Insight: Finite Resolution</h2>
+            
+            <p>The paper's core insight is that the tradeoff is governed by a single parameter: <strong>semantic resolution</strong>, denoted ε.</p>
+            
+            <p>Think of it this way. Your model has a similarity function <em>g(x, y)</em> that measures how "close" two stimuli are in representation space. This function can't be infinitely precise—at some point, distant stimuli just look like noise. The resolution ε is essentially the radius within which your model can meaningfully compare things.</p>
+            
+            <div class="callout">
+                <p><strong>Key intuition:</strong> If ε is small, your similarity function is sharp—you can tell nearby things apart, but you lose the ability to see relationships between distant things. If ε is large, your similarity function is broad—you capture long-range structure, but nearby things start to blur together.</p>
+            </div>
+            
+            <p>Here's the beautiful part: for a simple "constant similarity" model (things within ε are similar, things beyond are not), the probabilities of success on both tasks have closed-form expressions:</p>
+            
+            <div class="math-block">
+                $$p_S = \frac{1}{2} + b - b^2 \qquad p_I = 1 - \frac{b}{2}$$
+            </div>
+            
+            <p>where <em>b</em> = <em>b(ε)</em> is the fraction of the stimulus space covered by a ball of radius ε. On a circle, <em>b</em> = 2ε.</p>
+            
+            <p>These two equations define a <strong>Pareto front</strong>—a curve in (p<sub>S</sub>, p<sub>I</sub>) space that represents the best possible performance. No system can operate above this curve.</p>
+        </section>
+        
+        <section>
+            <h2>Interactive: Explore the Tradeoff</h2>
+            
+            <div class="interactive">
+                <div class="interactive-title">The Generalization-Identification Pareto Front</div>
+                <div class="viz-container">
+                    <div class="viz-chart" id="pareto-chart"></div>
+                    <div class="viz-controls">
+                        <div class="control-group">
+                            <div class="control-label">
+                                <span>Resolution ε</span>
+                                <span class="control-value" id="eps-display">0.25</span>
+                            </div>
+                            <input type="range" id="eps-slider" min="0.01" max="0.5" step="0.01" value="0.25">
+                        </div>
+                        
+                        <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+                            <div class="metric-row">
+                                <span class="metric-label">p<sub>S</sub> (Generalization)</span>
+                                <span class="metric-value" id="ps-display">0.750</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">p<sub>I</sub> (Identification)</span>
+                                <span class="metric-value" id="pi-display">0.847</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">b(ε) = 2ε</span>
+                                <span class="metric-value" id="b-display">0.50</span>
+                            </div>
+                        </div>
+                        
+                        <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 1rem;">
+                            <strong>Black curve:</strong> Linear decay similarity (Proposition 1)<br>
+                            <strong>Gray dashed:</strong> Constant similarity (Theorem 1)
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <p>Notice something crucial: <strong>p<sub>S</sub> peaks when b = 0.5</strong>—that is, when the resolution ball covers exactly half the stimulus space. Go beyond this, and <em>both</em> generalization and identification get worse. This is the "medium ε regime" where the tradeoff is most acute.</p>
+        </section>
+        
+        <section>
+            <h2>The 1/n Collapse: Why Multi-Object Reasoning Is Hard</h2>
+            
+            <p>The results above are for comparing just 2 stimuli. What happens when you have <em>n</em> items?</p>
+            
+            <p>The paper derives the generalization to n items, and the news is bad: identification performance collapses as <strong>1/n</strong>. Specifically, for large n:</p>
+            
+            <div class="math-block">
+                $$p_I^n \approx \frac{1}{b \cdot n}$$
+            </div>
+            
+            <p>This is a <em>drastic</em> scaling. If your model has learned representations that support generalization (say, b ≈ 0.5), then going from 2 items to 10 items means your identification accuracy drops by roughly 5×.</p>
+            
+            <div class="callout">
+                <p><strong>This explains Miller's Law.</strong> The famous "7 ± 2" limit on working memory items isn't an implementation detail—it's a fundamental consequence of using representations structured for generalization. Any system that can flexibly generalize will hit capacity limits on multi-item processing.</p>
+            </div>
+            
+            <p>The paper confirms this empirically: state-of-the-art VLMs show the predicted capacity limits when asked to process multiple objects simultaneously. They're not failing because they're poorly trained. They're failing because they're <em>well</em> trained—for generalization.</p>
+        </section>
+        
+        <section>
+            <h2>Emergence in Neural Networks</h2>
+            
+            <p>Here's where it gets really interesting. The theoretical results above assume a particular form for the similarity function. But what happens when you train a neural network end-to-end?</p>
+            
+            <p>The paper shows that a minimal 2-layer ReLU network, trained on a similarity task, <strong>spontaneously develops a resolution boundary</strong>. The network learns to represent nearby stimuli with positive inner products and distant stimuli with negative inner products—which the ReLU then clips to zero.</p>
+            
+            <p>During training, the empirical (p<sub>S</sub>, p<sub>I</sub>) trajectory closely tracks the theoretical Pareto front. The network doesn't know about the equations—it just discovers them through gradient descent.</p>
+            
+            <div class="figure">
+                <div id="learning-viz" style="display: flex; gap: 1rem;">
+                    <div style="flex: 1;">
+                        <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem; text-align: center;">Stimulus Circle with Learned Similarity</div>
+                        <div id="circle-chart" style="height: 250px;"></div>
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem; text-align: center;">Training Trajectory</div>
+                        <div id="trajectory-chart" style="height: 250px;"></div>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 1rem;">
+                    <button id="play-btn" style="padding: 0.5rem 1.5rem; background: var(--accent); color: white; border: none; border-radius: 6px; cursor: pointer; font-family: 'Inter', sans-serif; font-weight: 500;">
+                        ▶ Play Training
+                    </button>
+                </div>
+                <div class="figure-caption">
+                    <strong>Left:</strong> 50 stimuli on the flat circle [0,1]. The red dot is the reference; colored arc shows the learned resolution ε. Points transition from blue (low similarity) to green (high similarity) as the network learns.<br>
+                    <strong>Right:</strong> The (p<sub>S</sub>, p<sub>I</sub>) trajectory during training approaches the Proposition 1 curve.
+                </div>
+            </div>
+        </section>
+        
+        <section>
+            <h2>From Theory to Reality: Empirical Validation</h2>
+            
+            <p>Perhaps the most important contribution is showing that these limits aren't artifacts of simple setups. The paper tests a range of real systems:</p>
+            
+            <ul>
+                <li><strong>CNNs</strong> fine-tuned on bird species, with evolutionary distance as the similarity metric</li>
+                <li><strong>LLMs</strong> (Gemma, Llama, Qwen) on year-of-birth comparisons</li>
+                <li><strong>VLMs</strong> on spatial proximity tasks</li>
+            </ul>
+            
+            <p>In all cases, the models exhibit clear resolution limits. LLMs show ~70-80 year resolution on temporal comparisons. VLMs have spatial resolution boundaries beyond which accuracy collapses.</p>
+            
+            <p>The signature is universal: accuracy is high within the resolution boundary, then drops to chance beyond it. This is exactly what the theory predicts.</p>
+            
+            <h3>Connection to VLM Failures</h3>
+            
+            <p>These results help explain the puzzling pattern documented by Campbell et al.: VLMs can describe complex naturalistic scenes with remarkable accuracy, yet fail at seemingly simple tasks like counting objects or identifying spatial relationships.</p>
+            
+            <p>The key insight is that these aren't separate capabilities—they're <em>the same capability operating in different regimes</em>. Scene description relies on coarse-grained semantic relationships (large ε), where distributed representations excel. Counting requires fine-grained identification of individual objects (small ε), where interference becomes catastrophic.</p>
+            
+            <p>Even more striking: the failure modes are strikingly similar to human performance under time pressure. When humans are forced to make rapid, parallel judgments, they exhibit the same binding errors and capacity limits. This suggests the constraints aren't specific to the transformer architecture—they're universal to any system using distributed, generalizable representations.</p>
+        </section>
+        
+        <section>
+            <h2>What This Means</h2>
+            
+            <p>The immediate takeaway: <strong>there's no free lunch</strong>. If you want a model that generalizes flexibly—capturing semantic relationships, supporting analogical reasoning, enabling rapid learning—you're necessarily sacrificing identification accuracy on multi-item tasks.</p>
+            
+            <p>But the implications go deeper when we connect this to the broader research program:</p>
+            
+            <h3>1. Architecture Won't Save You</h3>
+            
+            <p>The Pareto front is independent of model architecture. Adding more parameters, attention heads, or layers can improve where you are on the front, but can't push you above it. This is consistent with Webb et al.'s finding that extrapolation requires specific inductive biases (like temporal context normalization) rather than just more capacity.</p>
+            
+            <h3>2. The Tradeoff Is Rational</h3>
+            
+            <p>Musslick and Cohen argued that human capacity limits reflect a "rational adaptation" to computational constraints. The "Bound by Semanticity" results make this precise: given that representations supporting generalization necessarily cause interference, the observed limits on multitasking and working memory aren't design flaws—they're optimal given the goal of flexible, generalizable intelligence.</p>
+            
+            <h3>3. VLM Failures Are a Feature, Not a Bug</h3>
+            
+            <p>Campbell et al. showed that VLMs exhibit human-like binding errors and capacity limits. The "Bound by Semanticity" framework explains why: these models have learned compositional, distributed representations (which is why they generalize so impressively), and such representations necessarily produce interference when processing multiple items.</p>
+            
+            <blockquote>
+                "One surprising implication of this perspective is that the binding errors exhibited by VLMs suggest that they have developed compositional representations, perhaps as a consequence of being forced to generalize by their immense and highly diverse training corpora."
+                <br>— Campbell et al., 2024
+            </blockquote>
+            
+            <h3>4. The Optimal Resolution Depends on the Task</h3>
+            
+            <p>The Pareto front shows that p<sub>S</sub> peaks when the resolution ball covers exactly half the stimulus space (b = 0.5). This suggests there's an "optimal" operating point for generalization tasks—not too fine (you lose structure) and not too coarse (you lose discrimination). Different applications may require different tradeoffs.</p>
+            
+            <h3>5. Compositional Representations Might Escape the Bound</h3>
+            
+            <p>The current theory assumes holistic, non-compositional representations. One of the most exciting open directions—flagged by both the "Bound by Semanticity" paper and the binding problem literature—is whether hierarchical or compositional codes could achieve better tradeoffs. This connects directly to debates about symbolic vs. connectionist AI.</p>
+        </section>
+        
+        <section>
+            <h2>Open Questions</h2>
+            
+            <p>This work opens several exciting research directions:</p>
+            
+            <ul>
+                <li><strong>Can we measure semantic resolution in pretrained models?</strong> The theory predicts a specific signature—accuracy that's high within ε and drops to chance beyond. Can we use this to reverse-engineer the operating point of different models?</li>
+                
+                <li><strong>How do humans navigate this tradeoff?</strong> Does the brain use different representations for different task demands? There's evidence that the prefrontal cortex dynamically adjusts the "sharpness" of representations—perhaps this is a mechanism for moving along the Pareto front.</li>
+                
+                <li><strong>Can compositional representations escape the bound?</strong> The current theory applies to holistic representations. Symbolic systems use compositional codes that explicitly bind features to roles. What's the analogous tradeoff for such systems?</li>
+                
+                <li><strong>What about temporal processing?</strong> Webb et al. showed that temporal context normalization enables extrapolation by emphasizing relational structure. Could similar techniques help with multi-item processing by spreading computation across time?</li>
+                
+                <li><strong>Is there an optimal training curriculum?</strong> If the resolution ε self-organizes during training, can we guide this process to land at a desired point on the Pareto front?</li>
+            </ul>
+            
+            <p>Perhaps most intriguingly: if the curse of generalization is truly fundamental, it suggests that human-level general intelligence—with its remarkable capacity for both flexible generalization and precise multi-item reasoning—may require architectural innovations we haven't yet discovered.</p>
+        </section>
+        
+        <section class="footer">
+            <h3>Further Reading</h3>
+            
+            <p><strong>Primary paper:</strong><br>
+            Nurisso et al. (2025). <a href="https://arxiv.org/abs/2506.14797" target="_blank">Bound by Semanticity</a>. arXiv:2506.14797</p>
+            
+            <p><strong>Background on the generalization-control tradeoff:</strong><br>
+            Musslick & Cohen (2021). <a href="https://www.cell.com/trends/cognitive-sciences/fulltext/S1364-6613(21)00148-0" target="_blank">Rationalizing constraints on the capacity for cognitive control</a>. <em>Trends in Cognitive Sciences</em>.</p>
+            
+            <p><strong>Extrapolation and relational representations:</strong><br>
+            Webb et al. (2020). <a href="https://proceedings.mlr.press/v119/webb20a.html" target="_blank">Learning Representations that Support Extrapolation</a>. <em>ICML</em>.</p>
+            
+            <p><strong>VLMs and the binding problem:</strong><br>
+            Campbell et al. (2024). <a href="https://arxiv.org/abs/2411.00238" target="_blank">Understanding the Limits of Vision Language Models Through the Lens of the Binding Problem</a>. <em>NeurIPS</em>.</p>
+            
+            <p><strong>The curse of generalization:</strong><br>
+            Frankland, Webb, Lewis & Cohen (2025). <a href="https://osf.io/preprints/psyarxiv/cjuxb_v2" target="_blank">No Coincidence, George: Processing Limits as the Curse of Generalization</a>. <em>PsyArXiv</em>.</p>
+        </section>
+    </article>
+    
+    <script>
+        // Initialize KaTeX
+        document.addEventListener("DOMContentLoaded", function() {
+            renderMathInElement(document.body, {
+                delimiters: [
+                    {left: "$$", right: "$$", display: true},
+                    {left: "$", right: "$", display: false}
+                ]
+            });
+        });
+        
+        // =====================================================
+        // PARETO FRONT VISUALIZATION
+        // =====================================================
+        
+        (function() {
+            const margin = { top: 20, right: 20, bottom: 45, left: 50 };
+            const width = 400 - margin.left - margin.right;
+            const height = 320 - margin.top - margin.bottom;
+            
+            const svg = d3.select("#pareto-chart")
+                .append("svg")
+                .attr("viewBox", `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`)
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+            
+            // Scales - focus on the interesting region
+            const x = d3.scaleLinear().domain([0.5, 1]).range([0, width]);
+            const y = d3.scaleLinear().domain([0.5, 1]).range([height, 0]);
+            
+            // Axes
+            svg.append("g")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(x).ticks(5))
+                .append("text")
+                .attr("x", width / 2)
+                .attr("y", 35)
+                .attr("fill", "#4a5568")
+                .style("font-size", "12px")
+                .style("font-family", "Inter, sans-serif")
+                .text("pᵢ (Identification)");
+            
+            svg.append("g")
+                .call(d3.axisLeft(y).ticks(5))
+                .append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("x", -height / 2)
+                .attr("y", -35)
+                .attr("fill", "#4a5568")
+                .style("font-size", "12px")
+                .style("font-family", "Inter, sans-serif")
+                .style("text-anchor", "middle")
+                .text("pₛ (Generalization)");
+            
+            const LOG2 = Math.log(2);
+            
+            // Generate curves
+            function generateCurve(type) {
+                const points = [];
+                for (let b = 0.001; b <= 1; b += 0.01) {
+                    let pS, pI;
+                    if (type === 'constant') {
+                        pS = 0.5 + b - b*b;
+                        pI = 1 - 0.5*b;
+                    } else {
+                        const coeff = 1.5 - LOG2;
+                        pS = 0.5 + b - coeff * b * b;
+                        pI = 1 - (1 - LOG2) * b;
+                    }
+                    if (pS >= 0.5 && pI >= 0.5) points.push({ pS, pI, b });
+                }
+                return points;
+            }
+            
+            const constantCurve = generateCurve('constant');
+            const linearCurve = generateCurve('linear');
+            
+            const line = d3.line()
+                .x(d => x(d.pI))
+                .y(d => y(d.pS))
+                .curve(d3.curveBasis);
+            
+            // Forbidden region
+            svg.append("path")
+                .attr("d", line(constantCurve) + `L${x(1)},${y(1)}L${x(0.5)},${y(1)}Z`)
+                .attr("fill", "rgba(196, 90, 59, 0.08)");
+            
+            // Constant curve (gray dashed)
+            svg.append("path")
+                .attr("d", line(constantCurve))
+                .attr("fill", "none")
+                .attr("stroke", "#888")
+                .attr("stroke-width", 2)
+                .attr("stroke-dasharray", "6,4");
+            
+            // Linear curve (black solid)
+            svg.append("path")
+                .attr("d", line(linearCurve))
+                .attr("fill", "none")
+                .attr("stroke", "#1a1a1a")
+                .attr("stroke-width", 2.5);
+            
+            // Operating point
+            const point = svg.append("circle")
+                .attr("r", 8)
+                .attr("fill", "#c45a3b")
+                .attr("stroke", "white")
+                .attr("stroke-width", 2);
+            
+            // Dashed lines
+            const hLine = svg.append("line")
+                .attr("stroke", "#c45a3b")
+                .attr("stroke-width", 1)
+                .attr("stroke-dasharray", "4,4")
+                .attr("opacity", 0.5);
+            
+            const vLine = svg.append("line")
+                .attr("stroke", "#c45a3b")
+                .attr("stroke-width", 1)
+                .attr("stroke-dasharray", "4,4")
+                .attr("opacity", 0.5);
+            
+            function update(eps) {
+                const b = eps * 2;
+                const coeff = 1.5 - LOG2;
+                const pS = 0.5 + b - coeff * b * b;
+                const pI = 1 - (1 - LOG2) * b;
+                
+                point.attr("cx", x(pI)).attr("cy", y(pS));
+                hLine.attr("x1", 0).attr("y1", y(pS)).attr("x2", x(pI)).attr("y2", y(pS));
+                vLine.attr("x1", x(pI)).attr("y1", y(pS)).attr("x2", x(pI)).attr("y2", height);
+                
+                document.getElementById("eps-display").textContent = eps.toFixed(2);
+                document.getElementById("ps-display").textContent = pS.toFixed(3);
+                document.getElementById("pi-display").textContent = pI.toFixed(3);
+                document.getElementById("b-display").textContent = b.toFixed(2);
+            }
+            
+            document.getElementById("eps-slider").addEventListener("input", function() {
+                update(parseFloat(this.value));
+            });
+            
+            update(0.25);
+        })();
+        
+        // =====================================================
+        // LEARNING VISUALIZATION
+        // =====================================================
+        
+        (function() {
+            const margin = { top: 10, right: 10, bottom: 30, left: 35 };
+            const width = 220;
+            const height = 220;
+            
+            // Circle chart
+            const svgCircle = d3.select("#circle-chart")
+                .append("svg")
+                .attr("viewBox", `0 0 ${width} ${height}`)
+                .append("g")
+                .attr("transform", `translate(${width/2}, ${height/2})`);
+            
+            const radius = 80;
+            const numStimuli = 50;
+            
+            // Draw circle
+            svgCircle.append("circle")
+                .attr("r", radius)
+                .attr("fill", "none")
+                .attr("stroke", "#e2e8f0")
+                .attr("stroke-width", 2);
+            
+            // Resolution arc
+            const arc = svgCircle.append("path")
+                .attr("fill", "rgba(196, 90, 59, 0.2)")
+                .attr("stroke", "#c45a3b")
+                .attr("stroke-width", 2);
+            
+            // Stimuli points
+            const stimuli = [];
+            for (let i = 0; i < numStimuli; i++) {
+                const t = i / numStimuli;
+                const angle = t * 2 * Math.PI - Math.PI/2;
+                stimuli.push({
+                    t, angle,
+                    x: radius * Math.cos(angle),
+                    y: radius * Math.sin(angle)
+                });
+            }
+            
+            const points = svgCircle.selectAll(".stim")
+                .data(stimuli)
+                .enter()
+                .append("circle")
+                .attr("class", "stim")
+                .attr("cx", d => d.x)
+                .attr("cy", d => d.y)
+                .attr("r", 4)
+                .attr("fill", "#6366f1");
+            
+            // Reference point
+            const refPoint = svgCircle.append("circle")
+                .attr("cx", 0)
+                .attr("cy", -radius)
+                .attr("r", 6)
+                .attr("fill", "#c45a3b")
+                .attr("stroke", "white")
+                .attr("stroke-width", 2);
+            
+            // Trajectory chart
+            const svgTraj = d3.select("#trajectory-chart")
+                .append("svg")
+                .attr("viewBox", `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`)
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+            
+            const xT = d3.scaleLinear().domain([0.5, 1]).range([0, width]);
+            const yT = d3.scaleLinear().domain([0.5, 1]).range([height, 0]);
+            
+            svgTraj.append("g")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(xT).ticks(4));
+            
+            svgTraj.append("g")
+                .call(d3.axisLeft(yT).ticks(4));
+            
+            // Pareto front on trajectory
+            const LOG2 = Math.log(2);
+            const frontPts = [];
+            for (let b = 0.001; b <= 1; b += 0.01) {
+                const coeff = 1.5 - LOG2;
+                const pS = 0.5 + b - coeff * b * b;
+                const pI = 1 - (1 - LOG2) * b;
+                if (pS >= 0.5 && pI >= 0.5) frontPts.push({ pS, pI });
+            }
+            
+            const frontLine = d3.line().x(d => xT(d.pI)).y(d => yT(d.pS)).curve(d3.curveBasis);
+            
+            svgTraj.append("path")
+                .attr("d", frontLine(frontPts))
+                .attr("fill", "none")
+                .attr("stroke", "#1a1a1a")
+                .attr("stroke-width", 2);
+            
+            // Training trajectory
+            const trajPath = svgTraj.append("path")
+                .attr("fill", "none")
+                .attr("stroke", "#c45a3b")
+                .attr("stroke-width", 2.5)
+                .attr("stroke-linecap", "round");
+            
+            const trajMarker = svgTraj.append("circle")
+                .attr("r", 6)
+                .attr("fill", "#fbbf24")
+                .attr("stroke", "white")
+                .attr("stroke-width", 2);
+            
+            // Generate trajectory data
+            const trajData = [];
+            const numEpochs = 80;
+            for (let i = 0; i <= numEpochs; i++) {
+                const t = i / numEpochs;
+                const b = 0.1 + t * 0.5;
+                const eps = b / 2;
+                const coeff = 1.5 - LOG2;
+                const targetPs = 0.5 + b - coeff * b * b;
+                const targetPi = 1 - (1 - LOG2) * b;
+                const noise = (1-t)*(1-t)*0.08;
+                const belowFront = (1-Math.pow(t,1.5))*0.06;
+                trajData.push({
+                    epoch: i,
+                    b, eps,
+                    pI: Math.max(0.5, targetPi + (Math.random()-0.5)*noise*0.5),
+                    pS: Math.max(0.5, targetPs - belowFront + (Math.random()-0.5)*noise)
+                });
+            }
+            
+            let currentEpoch = 0;
+            let playing = false;
+            let animId;
+            
+            const trajLine = d3.line().x(d => xT(d.pI)).y(d => yT(d.pS)).curve(d3.curveCardinal.tension(0.5));
+            
+            function updateViz(epoch) {
+                const current = trajData[epoch];
+                const eps = current.eps;
+                
+                // Update arc
+                const arcAngle = eps * 2 * Math.PI;
+                const arcGen = d3.arc()
+                    .innerRadius(radius - 6)
+                    .outerRadius(radius + 6)
+                    .startAngle(-arcAngle - Math.PI/2)
+                    .endAngle(arcAngle - Math.PI/2);
+                arc.attr("d", arcGen);
+                
+                // Update point colors
+                points.attr("fill", d => {
+                    const dist = Math.min(Math.abs(d.t), 1 - Math.abs(d.t));
+                    const sim = Math.max(0, 1 - dist / eps);
+                    if (sim > 0) {
+                        const hue = 120 + (1-sim)*120;
+                        return `hsl(${hue}, 65%, 50%)`;
+                    }
+                    return "#6366f1";
+                }).attr("r", d => {
+                    const dist = Math.min(Math.abs(d.t), 1 - Math.abs(d.t));
+                    const sim = Math.max(0, 1 - dist / eps);
+                    return 3 + sim * 4;
+                });
+                
+                // Update trajectory
+                const data = trajData.slice(0, epoch + 1);
+                if (data.length > 1) trajPath.attr("d", trajLine(data));
+                trajMarker.attr("cx", xT(current.pI)).attr("cy", yT(current.pS));
+            }
+            
+            function animate() {
+                if (currentEpoch < numEpochs) {
+                    updateViz(currentEpoch);
+                    currentEpoch++;
+                    animId = setTimeout(animate, 60);
+                } else {
+                    playing = false;
+                    document.getElementById("play-btn").textContent = "▶ Play Training";
+                }
+            }
+            
+            document.getElementById("play-btn").addEventListener("click", function() {
+                if (playing) {
+                    clearTimeout(animId);
+                    playing = false;
+                    this.textContent = "▶ Play Training";
+                } else {
+                    if (currentEpoch >= numEpochs) {
+                        currentEpoch = 0;
+                        trajPath.attr("d", "");
+                    }
+                    playing = true;
+                    this.textContent = "⏸ Pause";
+                    animate();
+                }
+            });
+            
+            updateViz(0);
+        })();
+    </script>
+</body>
+</html>

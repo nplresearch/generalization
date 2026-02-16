@@ -1,3 +1,42 @@
+"""
+Main training and evaluation script for the CNN bird-species G-I tradeoff experiment.
+
+This monolithic script implements the full pipeline:
+
+1. **Data preparation**
+   - Loads a phylogenetic tree (Newick format via DendriPy) and the CUB-200-2011
+     image dataset.
+   - Automatically maps CUB common names to scientific names, validates against the
+     tree, and builds a pairwise evolutionary distance matrix.
+   - Extracts ResNet-50 features for each species.
+
+2. **Miller's Law theoretical analysis**
+   - Computes average ball measure b(ε), variance, and the α term for the
+     evolutionary distance space.
+   - Derives theoretical G(ε) and I(ε) curves (Theorems 1 & 2 of the paper).
+   - Tests whether the space is discriminative (Definition 1).
+
+3. **Model training**
+   - GITradeoffModel: ResNet-50 backbone with a linear classification head.
+   - Loss = (1-α)·CrossEntropy + α·EvolutionaryDistanceLoss, where the latter
+     aligns pairwise feature distances with phylogenetic distances.
+   - Supports gradient accumulation and mixed-precision training.
+
+4. **Evaluation**
+   - evaluate_identification(): threshold-based I-score (2-AFC identity task).
+   - evaluate_generalization(): threshold-based G-score (similarity task using
+     evolutionary ground truth).
+   - Both in-distribution and out-of-distribution (held-out species) evaluation.
+
+5. **Experiment orchestration**
+   - run_experiments() sweeps over α values and random seeds, saves per-epoch
+     checkpoints, and produces G-I tradeoff plots.
+
+CLI usage::
+
+    python birdsbirdsbirds.py --alpha 0.0 0.5 1.0 --epochs 15 --num-seeds 5
+"""
+
 import dendropy
 import numpy as np
 import os
@@ -5,7 +44,7 @@ import torch
 import torchvision.transforms as transforms
 import torchvision.models as models
 import sys
-import argparse  # Add argparse for command line arguments
+import argparse
 
 # Add memory configuration for PyTorch CUDA allocator
 os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True,max_split_size_mb:128'

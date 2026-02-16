@@ -1,3 +1,27 @@
+"""
+Training loop for the G-I tradeoff toy-model experiments.
+
+MillerTrainer trains a model (TransformerModel or CompositionalModel) on
+batches produced by a MillerDataGenerator / CompositionalDataGenerator.
+The training objective combines two losses weighted by config-level lambdas:
+
+  1. **Similarity loss** (NLL on softmax-normalised inner-product logits):
+     encourages the model to rank the metrically closest context element
+     highest.
+  2. **Reconstruction loss** (MSE between the one-hot input and the
+     reconstruction produced by the model's transpose embedding):
+     acts as a regulariser that prevents the embedding from collapsing.
+
+After each epoch the trainer evaluates G-score and I-score via
+MillerTestEvaluator, logs all metrics in `train_history`, and adjusts
+the learning rate with ReduceLROnPlateau (maximising G + I).
+
+Usage (from notebooks)::
+
+    trainer = MillerTrainer(model, data_gen, TrainerConfig(...))
+    history = trainer.train(verbose=True)
+"""
+
 import numpy as np
 import torch
 import torch.nn as nn

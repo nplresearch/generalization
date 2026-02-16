@@ -1,3 +1,21 @@
+"""
+Post-training aggregation of CNN experiment results into pickle files.
+
+After birdsbirdsbirds.py has been run for multiple α values and random seeds,
+this script scans the timestamped output directories, collects per-epoch
+metrics and threshold-sweep results, and serialises them into pickle files
+that the analysis notebooks (figure.ipynb, supp.ipynb) consume.
+
+**Important**: update DATE_PATTERNS to match the timestamps of your training
+runs before executing.
+
+Outputs (written to ../results/output/):
+  - training_data.pkl:  {α → {run_id → {epoch → {g_score, i_score, ...}}}}
+  - threshold_data.pkl: {α → {threshold → {i_score: [...], g_score: [...], ...}}}
+  - evolutionary_similarity.pkl: normalised inverse-distance similarity matrix
+  - evolutionary_similarity_matrix.png: heatmap visualisation
+"""
+
 import os
 import glob
 import torch
