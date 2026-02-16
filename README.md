@@ -1,6 +1,6 @@
 # Bound by Semanticity: The Generalization-Identification Tradeoff
 
-Code and experiments for [**"Bound by Semanticity"**](https://arxiv.org/abs/2506.14797) (Nurisso et al., 2025), which derives exact Pareto frontiers for the tradeoff between generalization and identification in neural representations.
+Code and experiments for [**"Bound by Semanticity: Universal Laws Governing the Generalization-Identification Tradeoff"**](https://arxiv.org/abs/2506.14797) (Nurisso, Fernando, Deshpande, Perotti, Marjieh, Frankland, Lewis, Webb, Campbell, Vaccarino, Cohen & Petri, 2025), which derives exact Pareto frontiers for the tradeoff between generalization and identification in neural representations.
 
 > **The same property that makes neural networks powerful — shared, distributed representations — imposes hard limits on what they can do.**
 
@@ -131,8 +131,8 @@ jupyter notebook LLM_dates/LLM_analysis.ipynb
 
 ```bibtex
 @article{nurisso2025bound,
-  title={Bound by Semanticity},
-  author={Nurisso, Marco and Petri, Giovanni and others},
+  title={Bound by Semanticity: Universal Laws Governing the Generalization-Identification Tradeoff},
+  author={Nurisso, Marco and Fernando, Jesseba and Deshpande, Raj and Perotti, Alan and Marjieh, Raja and Frankland, Steven M. and Lewis, Richard L. and Webb, Taylor W. and Campbell, Declan and Vaccarino, Francesco and Cohen, Jonathan D. and Petri, Giovanni},
   journal={arXiv preprint arXiv:2506.14797},
   year={2025}
 }
